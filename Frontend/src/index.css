@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(body.dark, body.dark *));
+
+/* Base page structure */
+html, body {
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+/* Smooth background/color transitions */
+body {
+  background-color: #ffffff;
+  color: #111827;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Light mode styles set by UseTheme */
+body.light {
+  background-color: #ffffff;
+  color: #111827;
+}
+
+/* Dark mode styles set by UseTheme */
+body.dark {
+  background-color: #111827; /* Matches Tailwind gray-900 */
+  color: #f9fafb; /* Matches Tailwind gray-50 */
+}
+
+/* Sync <html> background to match body so overscroll/margins don't flash white */
+html:has(body.dark) {
+  background-color: #111827;
+}
+
+html:has(body.light) {
+  background-color: #ffffff;
+}

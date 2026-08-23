@@ -3,11 +3,26 @@ const mongoose=require('mongoose')
 const palaceschema=mongoose.Schema({
     name:{
         type:String,
-        required:true
+        required:true,
+        trim:true,
+        lowercase:true
+    },
+
+    email:{
+        type:String,
+        unique:true,
+        required:true,
+        trim:true
     },
         areaid:{
            type:mongoose.Schema.Types.ObjectId,
            ref:"areas",
+           required:true
+        },
+
+        adminid:{
+           type:mongoose.Schema.Types.ObjectId,
+           ref:"admins",
            required:true
         },
 
@@ -28,7 +43,7 @@ const palaceschema=mongoose.Schema({
             default:false
         },
 
-        approvedstatus:{
+        approvestatus:{
             type:String,
             enum:["pending","approved","rejected"],
             default:"pending"
@@ -39,19 +54,13 @@ const palaceschema=mongoose.Schema({
             enum:["admin","superadmin"],
             default:null
         },
-
-        qrcodeid:{
-            type:mongoose.Schema.Types.ObjectId,
-            ref:"qrs",
-            required:true,
-            default:null
-        },
         
         checkid: {
       type: String,
       default: null,
     },
-         otp:{
+
+     otp:{
         type:Number,
         default:null
     },

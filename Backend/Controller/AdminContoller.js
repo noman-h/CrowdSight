@@ -9,7 +9,7 @@ const moment = require("moment");
 
 const HtmlTemplate = require("../Utils/HtmlTemplate");
 const sendmail = require("../Utils/Helper");
-const AdminModel = require("../Model/AdminModel");
+
 exports.adminadd = async (req, res) => {
   try {
     const {name, email, phone, address, areaid ,aadharno } = req.body;
@@ -58,18 +58,17 @@ exports.adminadd = async (req, res) => {
   }
 };
 
-exports.adminupdate = async (req, res) => {
+exports.adminupdate = async (req, res) => {  
   try {
     const {
-      _id,
       name,
       email,
       phone,
       address,
-      cityId,
+      areaid,
       aadhaarno
     } = req.body;
-
+    const {_id}=req.params
 
     if (
       !(_id &&
@@ -77,7 +76,7 @@ exports.adminupdate = async (req, res) => {
         email &&
         phone &&
         address &&
-        cityId)
+        areaid)
     ) {
       return res.status(404).json({
         message: "all keys are required"
@@ -116,11 +115,9 @@ exports.adminupdate = async (req, res) => {
       email,
       phone,
       address,
-      cityId,
+      areaid,
       aadhaarno,
-      profileimage,
-      aadhaarFront,
-      aadhaarBack
+      profileimage
     };
 
     const response = await admins.findByIdAndUpdate(
@@ -147,51 +144,128 @@ exports.adminupdate = async (req, res) => {
   }
 };
 
+
 exports.adminreadall = async (req, res) => {
   try {
-    const { search, sort, status, skip, limit } = req.query;
-    const searchVal = search || "";
+    const { 
+      search, 
+      statesort, 
+      citysort, 
+      areasort, 
+      sort, 
+      activestatus, 
+      page, 
+      skip, 
+      limit 
+    } = req.query;
 
-    let matchQuery = {};
-    if (status === "active") {
-      matchQuery.activeStatus = true;
-    } else if (status === "inactive") {
-      matchQuery.activeStatus = false;
-      matchQuery.approveStatus = "approved";
-    } else if (status === "pending") {
-      matchQuery.approveStatus = "pending";
-    } else if (status === "rejected") {
-      matchQuery.approveStatus = "rejected";
+    let matchConditions = {};
+
+    // 1. Status Filter
+    if (activestatus === "active") {
+      matchConditions.activestatus = true;
+      matchConditions.approvestatus = "approved";
+    } else if (activestatus === "inactive") {
+      matchConditions.activestatus = false;
+      matchConditions.approvestatus = "approved";
+    } else if (activestatus === "pending") {
+      matchConditions.approvestatus = "pending";
+    } else if (activestatus === "rejected") {
+      matchConditions.approvestatus = "rejected";
     }
 
-    if (searchVal) {
-      matchQuery.$or = [
-        { name: { $regex: searchVal, $options: "i" } },
-        { email: { $regex: searchVal, $options: "i" } },
-        { phone: { $regex: searchVal, $options: "i" } }
+    // 2. Direct Area Filter (if selected directly)
+    if (areasort) {
+      matchConditions.areaid = new mongoose.Types.ObjectId(areasort);
+    }
+
+    // 3. Search Filter (Safe Regex)
+    if (search && search.trim() !== "") {
+      const escapedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      matchConditions.$or = [
+        { name: { $regex: escapedSearch, $options: "i" } },
+        { email: { $regex: escapedSearch, $options: "i" } }
       ];
     }
 
-    let sorting = null;
-    if (sort === "az") sorting = { name: 1 };
-    else if (sort === "za") sorting = { name: -1 };
-    else if (sort === "newest") sorting = { createdAt: -1 };
-    else if (sort === "oldest") sorting = { createdAt: 1 };
+    // 4. Sorting Options
+    let sortStage = { createdAt: -1 }; // Default: Newest First
+    if (sort === "newest") sortStage = { createdAt: -1 };
+    else if (sort === "oldest") sortStage = { createdAt: 1 };
 
-    const totalcount = await admins.countDocuments(matchQuery);
+    // 5. Pagination Calculation
+    const limitNum = parseInt(limit) || 10;
+    const pageNum = parseInt(page) || 1;
+    const skipNum = skip !== undefined ? parseInt(skip) : (pageNum - 1) * limitNum;
 
-    let query = admins.find(matchQuery).populate("cityId");
-    if (sorting) query = query.sort(sorting);
-    else query = query.sort({ createdAt: -1 });
+    // 6. Build the Aggregation Pipeline
+    const pipeline = [
+      // Match initial admin conditions (status, search, areaid)
+      { $match: matchConditions },
 
-    if (skip) query = query.skip(parseInt(skip));
-    if (limit) query = query.limit(parseInt(limit));
+      // Join with Areas collection
+      {
+        $lookup: {
+          from: "areas", // DB collection name for areas
+          localField: "areaid",
+          foreignField: "_id",
+          as: "areaid"
+        }
+      },
+      { $unwind: { path: "$areaid", preserveNullAndEmptyArrays: true } },
 
-    const response = await query;
+      // Join with Cities collection
+      {
+        $lookup: {
+          from: "cities", // DB collection name for cities
+          localField: "areaid.cityid",
+          foreignField: "_id",
+          as: "areaid.cityid"
+        }
+      },
+      { $unwind: { path: "$areaid.cityid", preserveNullAndEmptyArrays: true } },
+
+      // Join with States collection
+      {
+        $lookup: {
+          from: "states", // DB collection name for states
+          localField: "areaid.cityid.stateid",
+          foreignField: "_id",
+          as: "areaid.cityid.stateid"
+        }
+      },
+      { $unwind: { path: "$areaid.cityid.stateid", preserveNullAndEmptyArrays: true } }
+    ];
+
+    // Filter by City or State after joins (if selected)
+    if (citysort && !areasort) {
+      pipeline.push({
+        $match: { "areaid.cityid._id": new mongoose.Types.ObjectId(citysort) }
+      });
+    } else if (statesort && !areasort && !citysort) {
+      pipeline.push({
+        $match: { "areaid.cityid.stateid._id": new mongoose.Types.ObjectId(statesort) }
+      });
+    }
+
+    // 7. Get Total Count (using $facet or a separate aggregate)
+    const countPipeline = [...pipeline, { $count: "total" }];
+    const countResult = await admins.aggregate(countPipeline);
+    const totalcount = countResult.length > 0 ? countResult[0].total : 0;
+
+    // 8. Add Sorting & Pagination to the Main Pipeline
+    pipeline.push(
+      { $sort: sortStage },
+      { $skip: skipNum },
+      { $limit: limitNum }
+    );
+
+    const response = await admins.aggregate(pipeline);
+
     return res.status(200).json({ response, totalcount });
   } catch (err) {
-    console.log(err);
-    return res.status(500).json({ message: "internal server error" });
+    console.error("Error in adminreadall:", err);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -199,19 +273,83 @@ exports.adminreadone = async (req, res) => {
   try {
     const id = req.params.id;
 
-     if(!id){
-      return res.status(400).json({message:"bad request"})
+    if (!id) {
+      return res.status(400).json({
+        message: "bad request"
+      });
     }
 
-    const response = await admins.findOne({ _id: id }).populate("areaid");
+    const response = await admins
+      .findOne({ _id: id })
+      .populate({
+        path: "areaid",
+        populate: {
+          path: "cityid",
+          populate: {
+            path: "stateid"
+          }
+        }
+      });
 
-    if(!response){
-      return res.status(404).json({message : "wrong checkid data not found"})
+    if (!response) {
+      return res.status(404).json({
+        message: "data not found"
+      });
     }
 
-    return res.status(200).json({ response });
+    return res.status(200).json({
+      response
+    });
+
   } catch (err) {
-    return res.status(500).json({ message: "internal server error" });
+    console.log(err);
+
+    return res.status(500).json({
+      message: "internal server error"
+    });
+  }
+};
+
+exports.adminbyuserone = async (req, res) => {
+    console.log(req.params);
+    
+  try {
+    const email = req.params.email;
+
+    if (!email) {
+      return res.status(400).json({
+        message: "bad request"
+      });
+    }
+
+    const response = await admins
+      .findOne({email})
+      .populate({
+        path: "areaid",
+        populate: {
+          path: "cityid",
+          populate: {
+            path: "stateid"
+          }
+        }
+      });
+
+    if (!response) {
+      return res.status(404).json({
+        message: "data not found"
+      });
+    }
+
+    return res.status(200).json({
+      response
+    });
+
+  } catch (err) {
+    console.log(err);
+
+    return res.status(500).json({
+      message: "internal server error"
+    });
   }
 };
 
@@ -259,7 +397,7 @@ exports.adminsoftdelete = async (req, res) => {
     }
 
     const response = await admins.findByIdAndUpdate(id, {
-      activeStatus: false,
+      activestatus: false,
     });
     return res.status(200).json({ message: "temporary deleted" });
   } catch (err) {
@@ -275,7 +413,7 @@ exports.adminrecoverdelete = async (req, res) => {
       return res.status(404).json({ message: "id not found" });
     }
 
-    const response = await admins.findByIdAndUpdate(id, { activeStatus: true });
+    const response = await admins.findByIdAndUpdate(id, { activestatus: true });
     return res.status(200).json({ message: "restored deleted" });
   } catch (err) {
     return res.status(500).json({ message: "internal server error" });
@@ -285,39 +423,45 @@ exports.adminrecoverdelete = async (req, res) => {
 const password = uuidv4()
 exports.adminapprove = async (req, res) => {
   try {
-    const { _id, name, email } = req.body;
+    const { _id } = req.body;
 
     if (!_id) {
-      return res.status(404).json({ message: "id not found" });
+      return res.status(400).json({ message: "id not found" });
     }
 
-    const ownerdetail = await admins.findOne({ _id });
-    if (!ownerdetail) return res.status(404).json({ message: "id not found" });
+    const admindetail = await admins.findOne({ _id });
+    if (!admindetail) return res.status(404).json({ message: "admin not found" });
 
     const saltrounds = 10;
     const salt = bcrypt.genSaltSync(saltrounds);
     const hashpass = bcrypt.hashSync(password, salt);
 
+    const existuser=await users.findOne({email:admindetail.email})
+    
+    if(existuser) return res.status(409).json({message:"user already exist"})
+
+
+    const response = await admins.findByIdAndUpdate(_id, {
+      approvestatus: "approved",
+      activestatus: true,
+    });
+
     const user = new users({
-      name: name,
-      email: email,
+      name: admindetail.name,
+      email: admindetail.email,
       password: hashpass,
       role: "admin",
+      adminid:response._id
     });
 
     await user.save();
 
-    const response = await admins.findByIdAndUpdate(_id, {
-      approveStatus: "approved",
-      activeStatus: true,
-    });
-
     const emailid = await sendmail.mailsend(
-      ownerdetail.email,
-      "owner approved",
+      admindetail.email,
+      "admin approved",
       HtmlTemplate.adminApprovedTemplate(
-        ownerdetail.name,
-        ownerdetail.email,
+        admindetail.name,
+        admindetail.email,
         password,
       ),
     );
@@ -332,7 +476,7 @@ exports.adminapprove = async (req, res) => {
 
 exports.adminreject = async (req, res) => {
   try {
-    const { _id, name, email, reason } = req.body;
+    const { _id , reason } = req.body;
 
     if (!_id) {
       return res.status(404).json({ message: "id not found" });
@@ -342,14 +486,14 @@ exports.adminreject = async (req, res) => {
     if (!ownerdetail) return res.status(404).json({ message: "id not found" });
 
     const emailid = await sendmail.mailsend(
-      email,
+      ownerdetail.email,
       "owner rejected",
-      HtmlTemplate.adminRejectedTemplate(name, reason),
+      HtmlTemplate.adminRejectedTemplate(ownerdetail.name, reason),
     );
 
     const response = await admins.findByIdAndUpdate(_id, {
-      approveStatus: "rejected",
-      activeStatus: false,
+      approvestatus: "rejected",
+      activestatus: false,
     });
     return res.status(200).json({ message: "approval updated" });
   } catch (err) {
@@ -373,7 +517,7 @@ exports.emailotpsend = async (req, res) => {
 
     const existing = await admins.findOne({ email: email });
     if (!existing) {
-      const admin = new AdminModel({
+      const admin = new admins({
         email: email,
         otp: otp,
         expiretime: moment().add(10, "minutes")
@@ -498,11 +642,11 @@ exports.updateotpverify = async (req, res) => {
 
 exports.directadminadd = async (req, res) => {
   try {
-    const { name, email, phone, address, cityId } =
+    const { name, email, phone, address, areaid } =
       req.body;
 
 
-    if (!(name && email && phone && address && cityId)) {
+    if (!(name && email && phone && address && areaid)) {
       return res.status(404).json({ message: "all keys are required" });
     }
     const existing = await admins.findOne({ email });
@@ -511,13 +655,9 @@ exports.directadminadd = async (req, res) => {
     }
 
     let urlprofile = null;
-    let urlaadharfront = null;
-    let urlaadharback = null;
     if (req.files) {
       const uploaddata = await uploadimage(req.files);
       urlprofile = uploaddata[0].url;
-      urlaadharfront = uploaddata[1].url;
-      urlaadharback = uploaddata[2].url;
     }
 
 
@@ -536,12 +676,12 @@ exports.directadminadd = async (req, res) => {
 
       const response = await admins.create({
         ...data,
-        profileImage: urlprofile,
-        aadhaarFront: urlaadharfront,
-        aadhaarBack: urlaadharback,
-        approveStatus: "approved",
-        activeStatus: true
+        profileimage: urlprofile,
+        approvestatus: "approved",
+        activestatus: true
       });
+
+      
 
       const saltrounds = 10;
       const salt = bcrypt.genSaltSync(saltrounds);
@@ -550,8 +690,10 @@ exports.directadminadd = async (req, res) => {
       const user = new users({
         name: name,
         email: email,
+        phone:phone,
         password: hashpass,
         role: "admin",
+        adminid:response._id
       });
 
       await user.save();

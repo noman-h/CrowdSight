@@ -10,18 +10,20 @@ router.post('/addadmin',AdminController.adminadd)
 
 router.get('/getcheckone/:id',AdminController.admincheckone)
 
-router.post('/updateadmin',AdminController.adminupdate)
+router.put('/updateadmin/:_id',AdminController.adminupdate)
 
 router.post('/directaddadmin',auth,authorize('superadmin'),AdminController.directadminadd)
 
 router.get('/getalladmins',auth,authorize('superadmin'),AdminController.adminreadall)
 
-router.get('/getoneadmin/:id',auth,authorize('superadmin'),AdminController.adminreadone)
+router.get('/getoneadmin/:id',AdminController.adminreadone)
+
+router.get('/getuseradmin/:email',AdminController.adminbyuserone)
 
 
-router.patch('/softdeleteadmin/:id',auth,authorize('superadmin'),AdminController.adminsoftdelete)
+router.patch('/deactiveadmin/:id',auth,authorize('superadmin'),AdminController.adminsoftdelete)
 
-router.patch('/recoverdeleteadmin/:id',auth,authorize('superadmin'),AdminController.adminrecoverdelete)
+router.patch('/activeadmin/:id',auth,authorize('superadmin'),AdminController.adminrecoverdelete)
 
 router.delete('/deleteadmin/:id',auth,authorize('superadmin'),AdminController.admindelete)
 
@@ -33,6 +35,6 @@ router.post('/adminemailotpsend',AdminController.emailotpsend)
 
 router.patch('/adminotpsend',AdminController.updateotpsend)
 
-router.post('/adminotpverify',AdminController.updateotpverify)
+router.patch('/adminotpverify',AdminController.updateotpverify)
 
 module.exports=router

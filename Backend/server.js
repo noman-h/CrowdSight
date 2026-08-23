@@ -28,6 +28,9 @@ app.use('/location',locationroute)
 const adminroute=require('./Route/AdminRoute')
 app.use('/admin',adminroute)
 
+const palaceroute=require('./Route/PalaceRoute')
+app.use('/palace',palaceroute)
+
 const port = process.env.PORT || 8080;
 app.listen(port, () => {
   console.log("running server", port);

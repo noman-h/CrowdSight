@@ -11,6 +11,9 @@ import Superadminprotect from './Protectedroute/Superadminprotect'
 import Superadminhome from './SuperAdminpages/Superadminhome'
 import HelpAndSupport from './Pages/HelpAndSupport'
 import AdminRegisterForm from './Forms/AdminRegisterForm'
+import Adminprotect from './Protectedroute/Adminprotect'
+import Adminhome from './AdminPages/Adminhome'
+import PalaceRegisterForm from './Forms/PalaceRegisterForm'
 
 function App() {
 
@@ -22,9 +25,11 @@ function App() {
     <Route path='/signup' element={<Signup/>} />
     <Route path='/helpandsupport' element={<HelpAndSupport/>} />
     <Route path='/adminaddform/:id?' element={<AdminRegisterForm/>} />
+    <Route path='/palaceaddform/:id?' element={<PalaceRegisterForm/>} />
     <Route path='/forgotpassword' element={<Forgotpass/>} />
     <Route path='/resetpassword' element={<Authroute><Resetpass/></Authroute>}/>
     <Route path='/superadmin' element={<Superadminprotect><Superadminhome/></Superadminprotect>} />
+    <Route path='/admin' element={<Adminprotect><Adminhome/></Adminprotect>} />
    </Routes>
    </BrowserRouter>
   )

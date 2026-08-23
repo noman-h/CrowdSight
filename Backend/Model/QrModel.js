@@ -1,10 +1,6 @@
 const mongoose=require('mongoose')
 
 const qrschema=mongoose.Schema({
-    qrimage:{
-        type:String,
-        required:true
-    },
     code:{
        type:String,
        required:true
@@ -12,6 +8,10 @@ const qrschema=mongoose.Schema({
     palaceid:{
         type:mongoose.Schema.Types.ObjectId,
         required:true
+    },
+    activestatus:{
+    type:Boolean,
+    default:true
     }
 },
 {

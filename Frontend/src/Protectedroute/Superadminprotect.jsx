@@ -7,7 +7,8 @@ function Superadminprotect({children}) {
     const role=localStorage.getItem('role')
 
   if(role==="superadmin" && token) return children
-  else return <Navigate to='/login' />
+  else if(role==="admin" && token)return  <Navigate to='/admin' />
+  else return  <Navigate to='/login' />
 }
 
 export default Superadminprotect

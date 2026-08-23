@@ -57,6 +57,9 @@ const Adminschema=mongoose.Schema({
         type:Date,
         default:null
     }
+},
+{timestamps:true,
+ versionkey:false   
 })
 
 module.exports=mongoose.model("admins",Adminschema)

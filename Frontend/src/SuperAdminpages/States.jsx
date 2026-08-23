@@ -11,7 +11,6 @@ function Statemanage() {
   const [sort, setsort] = useState("");
 
   const debouncedvalue = UseDebouncing(search, 1000);
-  
 
   // Status as boolean: true = active, false = inactive
   const [status, setstatus] = useState(true);
@@ -150,7 +149,7 @@ function Statemanage() {
         background: '#0f172a', // Optional dark mode background
         color: '#fff'
       });
-    
+
       if (!result.isConfirmed) return
     try {
       const result = await axios.delete(
@@ -181,7 +180,6 @@ function Statemanage() {
   }
 
   console.log(view);
-  
 
   // Reset page when filters change
   useEffect(() => {
@@ -209,20 +207,20 @@ function Statemanage() {
   const endItem = Math.min(currentPage * limit, totalStates);
 
   return (
-    <div className="w-full rounded-3xl  border-slate-200/80  bg-linear-to-b from-white via-slate-50/50 to-slate-100/30 p-2 shadow-xl shadow-slate-200/50 backdrop-blur-md  dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-950 dark:shadow-none sm:p-7">
+    <div className="w-full rounded-3xl border-slate-200/80 bg-linear-to-b from-white via-slate-50/50 to-slate-100/30 p-2 shadow-xl shadow-slate-200/50 backdrop-blur-md dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-950 dark:shadow-none sm:p-7">
 
       {/* Top Controls Toolbar */}
       <div className="mb-6 flex flex-col gap-4 border-b border-slate-200/80 pb-6 dark:border-slate-800 lg:flex-row lg:items-center lg:justify-between">
-        
+
         {/* Left Filters */}
         <div className="flex flex-wrap items-center gap-3">
-          
+
           {/* Active / Inactive Segmented Control */}
           <div className="inline-flex rounded-2xl bg-slate-200/60 p-1 backdrop-blur-sm dark:bg-slate-800/80">
             <button
               className={`px-4 py-2 rounded-xl text-xs font-semibold tracking-wide uppercase transition-all duration-200 ${
                 status === true
-                  ? "bg-white text-emerald-600 shadow-sm dark:bg-slate-700 dark:text-emerald-400"
+                  ? "bg-white text-blue-600 shadow-sm dark:bg-slate-700 dark:text-blue-400"
                   : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
               }`}
               onClick={() => setstatus(true)}
@@ -248,7 +246,7 @@ function Statemanage() {
               placeholder="Search state..."
               value={search}
               onChange={(e) => setsearch(e.target.value)}
-              className="w-full rounded-2xl border border-slate-200 bg-white/90 px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition-all duration-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-slate-700/80 dark:bg-slate-800/90 dark:text-slate-100 dark:focus:ring-emerald-500/20"
+              className="w-full rounded-2xl border border-slate-200 bg-white/90 px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 outline-none transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700/80 dark:bg-slate-800/90 dark:text-slate-100 dark:focus:ring-blue-500/20"
             />
           </div>
 
@@ -256,7 +254,7 @@ function Statemanage() {
           <select
             value={sort}
             onChange={(e) => setsort(e.target.value)}
-            className="rounded-2xl border border-slate-200 bg-white/90 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all duration-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-slate-700/80 dark:bg-slate-800/90 dark:text-slate-200 dark:focus:ring-emerald-500/20"
+            className="rounded-2xl border border-slate-200 bg-white/90 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700/80 dark:bg-slate-800/90 dark:text-slate-200 dark:focus:ring-blue-500/20"
           >
             <option value="">Sort By</option>
             <option value="az">A → Z</option>
@@ -269,7 +267,7 @@ function Statemanage() {
         {/* Primary Action Button */}
         <div className="flex items-center justify-end">
           <button
-            className="group relative inline-flex items-center justify-center overflow-hidden rounded-2xl bg-linear-to-r from-emerald-600 to-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/25 transition-all duration-200 hover:shadow-emerald-600/40 hover:-translate-y-0.5 active:translate-y-0"
+            className="group relative inline-flex items-center justify-center overflow-hidden rounded-2xl bg-linear-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition-all duration-200 hover:shadow-blue-600/40 hover:-translate-y-0.5 active:translate-y-0"
             onClick={() => {
               seterr({});
               setstatd({ statename: "" });
@@ -296,13 +294,13 @@ function Statemanage() {
           statedata.map((item) => (
             <div
               key={item._id}
-              className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-4 transition-all duration-200 hover:border-emerald-500/40 hover:shadow-md dark:border-slate-800 dark:bg-slate-800/50 dark:hover:border-emerald-500/30 sm:p-5"
+              className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-4 transition-all duration-200 hover:border-blue-500/40 hover:shadow-md dark:border-slate-800 dark:bg-slate-800/50 dark:hover:border-blue-500/30 sm:p-5"
             >
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                
+
                 {/* Information Side */}
                 <div className="flex items-start gap-3.5">
-                  <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400">
+                  <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
                     <span className="text-sm font-bold uppercase">{item.statename?.[0] || "S"}</span>
                   </div>
                   <div>
@@ -316,11 +314,11 @@ function Statemanage() {
                       <span
                         className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                           item.activestatus === true
-                            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                            ? "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
                             : "bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300"
                         }`}
                       >
-                        <span className={`h-1.5 w-1.5 rounded-full ${item.activestatus ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`}></span>
+                        <span className={`h-1.5 w-1.5 rounded-full ${item.activestatus ? "bg-blue-500 animate-pulse" : "bg-rose-500"}`}></span>
                         {item.activestatus ? "Active" : "Inactive"}
                       </span>
                     </div>
@@ -367,7 +365,7 @@ function Statemanage() {
                     <>
                       <button
                         onClick={() => handlerestore(item._id)}
-                        className="rounded-xl bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400"
+                        className="rounded-xl bg-blue-500/10 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-500/20 dark:bg-blue-500/10 dark:text-blue-400"
                       >
                         Restore
                       </button>
@@ -432,7 +430,7 @@ function Statemanage() {
                     onClick={() => setCurrentPage(p)}
                     className={`h-7 w-7 rounded-lg text-xs font-semibold transition-all duration-200 ${
                       currentPage === p
-                        ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20"
+                        ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
                         : "text-slate-600 hover:bg-slate-200/60 dark:text-slate-300 dark:hover:bg-slate-700/60"
                     }`}
                   >
@@ -482,7 +480,7 @@ function Statemanage() {
                   <span
                     className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                       view.activestatus === true
-                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
                         : "bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300"
                     }`}
                   >
@@ -536,7 +534,7 @@ function Statemanage() {
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">State Name</label>
                 <input
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100 dark:focus:bg-slate-800"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-3.5 py-2.5 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100 dark:focus:bg-slate-800"
                   type="text"
                   placeholder="e.g. Maharashtra"
                   value={stated.statename}
@@ -546,7 +544,7 @@ function Statemanage() {
               </div>
               <button
                 type="submit"
-                className="mt-1 rounded-2xl bg-linear-to-r from-emerald-600 to-teal-600 py-2.5 text-xs font-semibold uppercase tracking-wider text-white shadow-md shadow-emerald-600/20 transition hover:shadow-lg hover:shadow-emerald-600/30"
+                className="mt-1 rounded-2xl bg-linear-to-r from-blue-600 to-indigo-600 py-2.5 text-xs font-semibold uppercase tracking-wider text-white shadow-md shadow-blue-600/20 transition hover:shadow-lg hover:shadow-blue-600/30"
               >
                 {stated._id ? "Update State" : "Save State"}
               </button>

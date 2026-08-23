@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate, useParams } from 'react-router-dom';
 
 function AdminRegisterForm() {
+  const navigate = useNavigate();
+
+  const role = localStorage.getItem('role');
+
+  const { id } = useParams();
+  const isEditMode = Boolean(id);
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -68,8 +76,7 @@ function AdminRegisterForm() {
           `${import.meta.env.VITE_API_URL}location/getallstate?activestatus=true`,
           getAuthHeaders()
         );
-        console.log(result);
-        
+
         const responseData = result?.data?.result || [];
         setStatesList(responseData);
       } catch (err) {
@@ -81,7 +88,6 @@ function AdminRegisterForm() {
 
     fetchStates();
   }, []);
-
 
   // 2. Fetch Cities when State Changes
   useEffect(() => {
@@ -133,6 +139,52 @@ function AdminRegisterForm() {
 
     fetchAreas();
   }, [formData.cityid, formData.stateid]);
+
+  // Fetch Existing Admin Data when ID is Present
+  useEffect(() => {
+    const fetchadmin = async () => {
+      try {
+        const result = await axios.get(
+          `${import.meta.env.VITE_API_URL}admin/getoneadmin/${id}`,
+          getAuthHeaders()
+        );
+        const adminData = result?.data?.response || result?.data;
+
+        if (adminData) {
+          setFormData({
+            name: adminData.name || '',
+            email: adminData.email || '',
+            phone: adminData.phone ? String(adminData.phone) : '',
+            address: adminData.address || '',
+            aadharno: adminData.aadharno ? String(adminData.aadharno) : '',
+            stateid: adminData?.areaid?.cityid?.stateid?._id || adminData.stateid || '',
+            cityid: adminData.areaid?.cityid?._id || adminData.cityid || '',
+            areaid: adminData.areaid?._id || adminData.areaid || '',
+            otp: '',
+          });
+
+          if (adminData.profileimage) {
+            const imagePath = adminData.profileimage.startsWith('http')
+              ? adminData.profileimage
+              : `${import.meta.env.VITE_API_URL}${adminData.profileimage}`;
+            setImagePreview(imagePath);
+          }
+
+          setIsEmailVerified(true);
+        }
+      } catch (err) {
+        console.error('Error fetching admin data:', err);
+        setServerMessage({
+          type: 'error',
+          text: 'Failed to load existing admin details.',
+        });
+      }
+    };
+
+    if (id) {
+      fetchadmin();
+    }
+  }, [id]);
 
   // Handle Input Changes
   const handleChange = (e) => {
@@ -245,7 +297,7 @@ function AdminRegisterForm() {
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address.';
     } else if (!isEmailVerified) {
-      newErrors.email = 'Please verify your email address before registering.';
+      newErrors.email = 'Please verify your email address before submitting.';
     }
 
     if (!formData.phone) {
@@ -266,7 +318,9 @@ function AdminRegisterForm() {
     if (!formData.cityid) newErrors.cityid = 'Please select a city.';
     if (!formData.areaid) newErrors.areaid = 'Please select an area.';
 
-    if (!profileImage) newErrors.profileimage = 'Profile image is required.';
+    if (!isEditMode && !profileImage) {
+      newErrors.profileimage = 'Profile image is required.';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -289,39 +343,81 @@ function AdminRegisterForm() {
       submitData.append('address', formData.address.trim());
       submitData.append('aadharno', Number(formData.aadharno));
       submitData.append('areaid', formData.areaid);
-      submitData.append('profileimage', profileImage);
 
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}admin/addadmin`,
-        submitData,
-        getAuthHeaders(true)
-      );
+      if (profileImage) {
+        submitData.append('profileimage', profileImage);
+      }
+
+      let response;
+      if (role === 'superadmin' && !isEditMode) {
+        response = await axios.post(
+          `${import.meta.env.VITE_API_URL}admin/directaddadmin`,
+          submitData,
+          getAuthHeaders(true)
+        );
+      } else if (isEditMode) {
+        response = await axios.put(
+          `${import.meta.env.VITE_API_URL}admin/updateadmin/${id}`,
+          submitData,
+          getAuthHeaders(true)
+        );
+      } else {
+        response = await axios.post(
+          `${import.meta.env.VITE_API_URL}admin/addadmin`,
+          submitData,
+          getAuthHeaders(true)
+        );
+      }
 
       setServerMessage({
         type: 'success',
-        text: response.data?.message || 'Admin registration submitted successfully! Pending approval.',
+        text:
+          response.data?.message ||
+          (isEditMode
+            ? 'Admin details updated successfully!'
+            : 'Admin registration submitted successfully! Pending approval.'),
       });
 
-      // Reset form
-      setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        address: '',
-        aadharno: '',
-        stateid: '',
-        cityid: '',
-        areaid: '',
-        otp: '',
-      });
-      setProfileImage(null);
-      setImagePreview(null);
-      setIsOtpSent(false);
-      setIsEmailVerified(false);
+      if (!isEditMode) {
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          address: '',
+          aadharno: '',
+          stateid: '',
+          cityid: '',
+          areaid: '',
+          otp: '',
+        });
+        setProfileImage(null);
+        setImagePreview(null);
+        setIsOtpSent(false);
+        setIsEmailVerified(false);
+      } else {
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          address: '',
+          aadharno: '',
+          stateid: '',
+          cityid: '',
+          areaid: '',
+          otp: '',
+        });
+        setProfileImage(null);
+        setImagePreview(null);
+        setIsOtpSent(false);
+        setIsEmailVerified(false);
+        setTimeout(() => {
+          navigate(-1);
+        }, 2000);
+      }
     } catch (err) {
       setServerMessage({
         type: 'error',
-        text: err.response?.data?.message || 'Registration failed. Please try again.',
+        text: err.response?.data?.message || 'Operation failed. Please try again.',
       });
     } finally {
       setLoading(false);
@@ -331,14 +427,28 @@ function AdminRegisterForm() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 py-10 px-4 sm:px-6 lg:px-8 text-slate-800 dark:text-slate-100 flex justify-center items-center">
       <div className="max-w-2xl w-full bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-xl p-6 sm:p-10 backdrop-blur-md">
-        
-        {/* Header */}
+
+        {/* Header with Back Button */}
         <div className="mb-8 border-b border-slate-200 dark:border-slate-700/60 pb-5">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-wide">
-            Admin Registration Form
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Submit your administrative application with verified email and area details.
+          <div className="flex items-center gap-3 mb-2">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors cursor-pointer"
+              aria-label="Go Back"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+            </button>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-wide">
+              {isEditMode ? 'Edit Admin Details' : 'Admin Registration Form'}
+            </h1>
+          </div>
+          <p className="text-sm text-slate-500 dark:text-slate-400 pl-11">
+            {isEditMode
+              ? 'Update administrative information and assigned jurisdiction.'
+              : 'Submit your administrative application with verified email and area details.'}
           </p>
         </div>
 
@@ -370,7 +480,7 @@ function AdminRegisterForm() {
             </div>
             <div className="flex-1 w-full">
               <label className="block text-sm font-semibold text-slate-900 dark:text-white mb-1">
-                Profile Image <span className="text-rose-500">*</span>
+                Profile Image {!isEditMode && <span className="text-rose-500">*</span>}
               </label>
               <input
                 type="file"
@@ -440,14 +550,23 @@ function AdminRegisterForm() {
                     errors.email ? 'border-rose-500 focus:ring-rose-500' : 'border-slate-300 dark:border-slate-600 focus:ring-indigo-500'
                   }`}
                 />
-                {!isEmailVerified && (
+                {!isEmailVerified && role !== 'superadmin' && (
                   <button
                     type="button"
                     onClick={handleSendOtp}
                     disabled={otpLoading || otpTimer > 0}
-                    className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 disabled:opacity-50 text-white font-medium text-xs rounded-xl transition-colors shrink-0"
+                    className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 disabled:opacity-50 text-white font-medium text-xs rounded-xl transition-colors shrink-0 cursor-pointer"
                   >
                     {otpLoading ? 'Sending...' : otpTimer > 0 ? `Resend (${otpTimer}s)` : isOtpSent ? 'Resend OTP' : 'Send OTP'}
+                  </button>
+                )}
+                {!isEmailVerified && role === 'superadmin' && (
+                  <button
+                    type="button"
+                    onClick={() => setIsEmailVerified(true)}
+                    className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 disabled:opacity-50 text-white font-medium text-xs rounded-xl transition-colors shrink-0 cursor-pointer"
+                  >
+                    Verify Email
                   </button>
                 )}
               </div>
@@ -475,7 +594,7 @@ function AdminRegisterForm() {
                     type="button"
                     onClick={handleVerifyOtp}
                     disabled={otpLoading}
-                    className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 text-white font-medium text-xs rounded-xl transition-colors shrink-0"
+                    className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 text-white font-medium text-xs rounded-xl transition-colors shrink-0 cursor-pointer"
                   >
                     {otpLoading ? 'Verifying...' : 'Verify OTP'}
                   </button>
@@ -516,7 +635,7 @@ function AdminRegisterForm() {
 
           {/* Location Selectors */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            
+
             {/* 1. Select State */}
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
@@ -622,10 +741,10 @@ function AdminRegisterForm() {
             {loading ? (
               <>
                 <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                Submitting Request...
+                {isEditMode ? 'Updating Request...' : 'Submitting Request...'}
               </>
             ) : (
-              'Submit Admin Registration'
+              isEditMode ? 'Update Admin Details' : 'Submit Admin Registration'
             )}
           </button>
 

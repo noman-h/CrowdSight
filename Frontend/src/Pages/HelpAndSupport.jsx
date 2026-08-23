@@ -1,5 +1,6 @@
 import axios from 'axios';
 import React, { useState } from 'react';
+import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
 function HelpAndSupport() {
@@ -8,6 +9,13 @@ function HelpAndSupport() {
   const [statusResult, setStatusResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // OTP Verification States
+  const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
+  const [otpInput, setOtpInput] = useState("");
+  const [isSendingOtp, setIsSendingOtp] = useState(false); // Added: Loading state for sending OTP
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [otpError, setOtpError] = useState("");
   
   const navigate = useNavigate();
 
@@ -17,6 +25,7 @@ function HelpAndSupport() {
     setSearchId("");
     setStatusResult(null);
     setIsModalOpen(false);
+    setIsOtpModalOpen(false);
   };
 
   const handleCheckStatus = async (e) => {
@@ -93,15 +102,70 @@ function HelpAndSupport() {
     setIsModalOpen(true);
   };
 
-  // Navigates to the edit/update form using params ID
-  const handleNavigateToUpdate = () => {
+  // Step 1: Initiate OTP Verification Workflow
+  const handleInitiateOtp = async () => {
     if (!statusResult?.dbId) return;
-    const targetPath = statusResult.activeTab === "admin"
-      ? `/adminaddform/${statusResult.dbId}`
-      : `/palaceaddform/${statusResult.dbId}`;
-    
-    setIsModalOpen(false);
-    navigate(targetPath);
+
+    setIsSendingOtp(true);
+    setOtpInput("");
+    setOtpError("");
+
+    try {
+      const baseUrl = import.meta.env.VITE_API_URL;
+      const result = await axios.patch(`${baseUrl}admin/adminotpsend`, { 
+        dbId: statusResult.dbId, 
+        email: statusResult.email 
+      });
+
+      if (result.status === 200) {
+        toast.success('OTP sent successfully');
+        // Only close details modal and open OTP modal AFTER dispatch succeeds
+        setIsModalOpen(false);
+        setIsOtpModalOpen(true);
+      }
+    } catch (err) {
+      console.error("Failed to send OTP:", err);
+      toast.error(err.response?.data?.message || "Failed to send OTP. Please try again.");
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  // Step 2: Verify OTP and navigate to edit/update form
+  const handleVerifyOtpAndNavigate = async (e) => {
+    e.preventDefault();
+    if (!otpInput.trim()) {
+      setOtpError("Please enter the OTP.");
+      return;
+    }
+
+    setIsVerifying(true);
+    setOtpError("");
+
+    try {
+      const baseUrl = import.meta.env.VITE_API_URL;
+
+      const result = await axios.patch(`${baseUrl}admin/adminotpverify`, { 
+        email: statusResult.email, 
+        otp: otpInput 
+      });
+
+      if (result.status === 200) {
+        toast.success('OTP verified successfully');
+        const targetPath = statusResult.activeTab === "admin"
+          ? `/adminaddform/${statusResult.dbId}`
+          : `/palaceaddform/${statusResult.dbId}`;
+        
+        setIsOtpModalOpen(false);
+        navigate(targetPath);
+      }
+      
+    } catch (error) {
+      console.error("OTP Verification failed:", error);
+      setOtpError(error.response?.data?.message || "Invalid OTP. Please try again.");
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   return (
@@ -378,7 +442,8 @@ function HelpAndSupport() {
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg transition-colors"
+                disabled={isSendingOtp}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg transition-colors disabled:opacity-50"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -461,23 +526,131 @@ function HelpAndSupport() {
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors"
+                disabled={isSendingOtp}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors disabled:opacity-50"
               >
                 Close
               </button>
               
-              {/* Update Button navigating with params ID */}
+              {/* Update Button triggers OTP Dispatch and Loading State */}
               <button
                 type="button"
-                onClick={handleNavigateToUpdate}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl transition-colors flex items-center gap-1.5 shadow-sm"
+                onClick={handleInitiateOtp}
+                disabled={isSendingOtp}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm min-w-30"
               >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-                Update Request
+                {isSendingOtp ? (
+                  <>
+                    <span className="inline-block animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />
+                    <span>Sending OTP...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    <span>Update Request</span>
+                  </>
+                )}
               </button>
             </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* OTP Verification Popup Modal */}
+      {isOtpModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl max-w-md w-full p-6 space-y-6 relative overflow-hidden">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-lg">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  Security Verification
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsOtpModalOpen(false)}
+                disabled={isVerifying}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg transition-colors disabled:opacity-50"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* OTP Form Body */}
+            <form onSubmit={handleVerifyOtpAndNavigate} className="space-y-4">
+              <p className="text-xs text-slate-600 dark:text-slate-300">
+                Please enter the OTP sent to your registered email (<span className="font-semibold text-slate-800 dark:text-slate-200">{statusResult?.email}</span>) to edit this request.
+              </p>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Enter OTP
+                </label>
+                <input
+                  type="text"
+                  maxLength="6"
+                  value={otpInput}
+                  onChange={(e) => setOtpInput(e.target.value)}
+                  placeholder="e.g. 123456"
+                  disabled={isVerifying}
+                  className="w-full px-4 py-2.5 rounded-xl text-center text-lg tracking-widest font-semibold border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                />
+                {otpError && (
+                  <p className="text-xs text-rose-500 mt-1 font-medium">{otpError}</p>
+                )}
+              </div>
+
+              {/* Resend Option inside Verification Modal */}
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleInitiateOtp}
+                  disabled={isSendingOtp || isVerifying}
+                  className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-medium disabled:opacity-50 flex items-center gap-1"
+                >
+                  {isSendingOtp && <span className="inline-block animate-spin rounded-full h-3 w-3 border-2 border-indigo-600 dark:border-indigo-400 border-t-transparent" />}
+                  Resend OTP
+                </button>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => setIsOtpModalOpen(false)}
+                  disabled={isVerifying}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isVerifying || !otpInput.trim()}
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm min-w-30"
+                >
+                  {isVerifying ? (
+                    <>
+                      <span className="inline-block animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />
+                      <span>Verifying...</span>
+                    </>
+                  ) : (
+                    "Verify & Continue"
+                  )}
+                </button>
+              </div>
+            </form>
 
           </div>
         </div>

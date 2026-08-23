@@ -27,6 +27,16 @@ const userschema=mongoose.Schema({
         enum:["superadmin","admin","palaceowner","user"],
         default:"user"
     },
+    adminid:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:'admins',
+        default:null
+    },
+    palaceid:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:'palaces',
+        default:null
+    },
     theme:{
        type:String,
        default:"light"

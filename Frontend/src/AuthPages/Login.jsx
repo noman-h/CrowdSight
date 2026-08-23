@@ -36,6 +36,7 @@ function Login() {
 
       const role=result?.data?.user?.role
       if(role==="superadmin")   navigate('/superadmin')
+      if(role==="admin")   navigate('/admin')
     
     }
        if (!email || !password) {

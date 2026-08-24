@@ -18,15 +18,15 @@ router.get('/getallpalaces',PalaceController.palacereadall)
 
 router.get('/getonepalace/:id',PalaceController.palacereadone)
 
-// router.patch('/deactivepalace/:id',auth,authorize('superadmin'),PalaceController.adminsoftdelete)
+router.patch('/deactivepalace/:id',auth,authorize('superadmin','admin'),PalaceController.palacesoftdelete)
 
-// router.patch('/activepalace/:id',auth,authorize('superadmin'),PalaceController.palacerecoverdelete)
+router.patch('/activepalace/:id',auth,authorize('superadmin','admin'),PalaceController.palacerecoverdelete)
 
-// router.delete('/deletepalace/:id',auth,authorize('superadmin'),PalaceController.palacedelete)
+router.delete('/deletepalace/:id',auth,authorize('superadmin','admin'),PalaceController.palacedelete)
 
-// router.patch('/approvepalace',auth,authorize('superadmin'),PalaceController.palaceapprove)
+router.patch('/approvepalace',auth,authorize('superadmin','admin'),PalaceController.palaceapprove)
 
-// router.patch('/rejectpalace',auth,authorize('superadmin'),PalaceController.palacereject)
+router.patch('/rejectpalace',auth,authorize('superadmin','admin'),PalaceController.palacereject)
 
 router.post('/palaceemailotpsend',PalaceController.emailotpsend)
 

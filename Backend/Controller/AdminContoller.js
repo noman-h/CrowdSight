@@ -8,12 +8,11 @@ const { uploadimage } = require('../Utils/FileUpload');
 const moment = require("moment");
 
 const HtmlTemplate = require("../Utils/HtmlTemplate");
-const sendmail = require("../Utils/Helper");
+const sendmail = require("../Utils/helper");
 
 exports.adminadd = async (req, res) => {
   try {
     const {name, email, phone, address, areaid ,aadharno } = req.body;
-
 
     if (!(name && email && phone && address && areaid)) {
       return res.status(404).json({ message: "all keys are required" });
@@ -39,11 +38,14 @@ exports.adminadd = async (req, res) => {
     if (emailid) {
       const data = req.body;
 
-      const response = await admins.findOneAndUpdate({ email }, {
+      const response = await admins.findOneAndUpdate(
+        { email }
+        ,{
         ...data,
         checkid,
         profileimage: urlprofile
-      });
+      }
+    );
 
       return res.status(201).json({ message: "ownerdetail requested successfully" });
     }
@@ -422,6 +424,7 @@ exports.adminrecoverdelete = async (req, res) => {
 
 const password = uuidv4()
 exports.adminapprove = async (req, res) => {
+  const session = await mongoose.startSession();
   try {
     const { _id } = req.body;
 
@@ -440,11 +443,12 @@ exports.adminapprove = async (req, res) => {
     
     if(existuser) return res.status(409).json({message:"user already exist"})
 
-
-    const response = await admins.findByIdAndUpdate(_id, {
+    await session.withTransaction(async ()=>{
+       
+       const response = await admins.findByIdAndUpdate(_id, {
       approvestatus: "approved",
       activestatus: true,
-    });
+    },{session});
 
     const user = new users({
       name: admindetail.name,
@@ -454,7 +458,9 @@ exports.adminapprove = async (req, res) => {
       adminid:response._id
     });
 
-    await user.save();
+    await user.save({session});
+
+     })
 
     const emailid = await sendmail.mailsend(
       admindetail.email,
@@ -466,11 +472,18 @@ exports.adminapprove = async (req, res) => {
       ),
     );
 
+    if(!emailid){
+      return res.status(400).json({message:"email not send something wrong"})
+    }
+
     return res.status(200).json({ message: "approval updated" });
   } catch (err) {
     console.log(err);
 
     return res.status(500).json({ message: "internal server error" });
+  }
+  finally{
+     await session.endSession();
   }
 };
 
@@ -601,7 +614,6 @@ exports.updateotpsend = async (req, res) => {
 exports.updateotpverify = async (req, res) => {
   try {
     const { email, otp } = req.body;
-    console.log(req.body);
 
     if (!(email && otp)) {
       return res.status(404).json({ message: "all keys are required" });
@@ -641,18 +653,23 @@ exports.updateotpverify = async (req, res) => {
 
 
 exports.directadminadd = async (req, res) => {
+  const session=await mongoose.startSession();
   try {
     const { name, email, phone, address, areaid } =
       req.body;
 
-
     if (!(name && email && phone && address && areaid)) {
       return res.status(404).json({ message: "all keys are required" });
     }
-    const existing = await admins.findOne({ email });
-    if (existing) {
+    const existingadmin = await admins.findOne({ email });
+    if (existingadmin) {
       return res.status(409).json({ message: "admin already exist" });
     }
+
+     const existuser=await users.findOne({email:email})
+            if(existuser){
+              return res.status(409).json({message:"email already exist in user"})
+            }
 
     let urlprofile = null;
     if (req.files) {
@@ -660,32 +677,26 @@ exports.directadminadd = async (req, res) => {
       urlprofile = uploaddata[0].url;
     }
 
+     await session.withTransaction(async ()=>{
 
-    const emailid = await sendmail.mailsend(
-      email,
-      "owner approved",
-      HtmlTemplate.adminApprovedTemplate(
-        name,
-        email,
-        password,
-      ),
-    );
-
-    if (emailid) {
       const data = req.body;
 
-      const response = await admins.create({
+      const admin =new admins({
         ...data,
         profileimage: urlprofile,
         approvestatus: "approved",
         activestatus: true
       });
 
+      await admin.save({session})
+     
       
 
       const saltrounds = 10;
       const salt = bcrypt.genSaltSync(saltrounds);
       const hashpass = bcrypt.hashSync(password, salt);
+
+
 
       const user = new users({
         name: name,
@@ -693,21 +704,36 @@ exports.directadminadd = async (req, res) => {
         phone:phone,
         password: hashpass,
         role: "admin",
-        adminid:response._id
+        adminid:admin._id
       });
 
-      await user.save();
+      await user.save({session});
+     })
 
-      return res.status(201).json({ message: "admin added successfully" });
-    }
 
-    return res
+      const emailid = await sendmail.mailsend(
+      email,
+      "owner added",
+      HtmlTemplate.adminApprovedTemplate(
+        name,
+        email,
+        password,
+      ),
+    );
+
+    if (!emailid) {
+       return res
       .status(400)
-      .json({ message: "admin not added error occured retry" });
-  } catch (err) {
-    console.log(err);
+      .json({ message: "email not sended something wrong" });
+     }
 
+    return res.status(201).json({ message: "admin added successfully" });
+   
+  } catch (err) {
     return res.status(500).json({ message: "internal server error", err });
+  }
+  finally{
+     await session.endSession();
   }
 };
 

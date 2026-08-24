@@ -27,9 +27,7 @@ function Header() {
   }, [])
 
   const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('email')
-    localStorage.removeItem('theme')
+    localStorage.clear()
     window.location.href = '/login'
   }
 

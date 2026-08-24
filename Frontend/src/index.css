@@ -3,17 +3,72 @@
 @custom-variant dark (&:where(body.dark, body.dark *));
 
 /* Base page structure */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  width: 100%;
+}
+
 html, body {
-  min-height: 100vh;
   margin: 0;
   padding: 0;
+}
+
+html {
+  overflow-x: clip;
+}
+
+#root {
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 /* Smooth background/color transitions */
 body {
   background-color: #ffffff;
   color: #111827;
+  overflow-x: hidden;
   transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+input,
+select,
+textarea,
+button {
+  max-width: 100%;
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Keep anchored content visible below the sticky application header. */
+[id] {
+  scroll-margin-top: 5rem;
+}
+
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }
 
 /* Light mode styles set by UseTheme */

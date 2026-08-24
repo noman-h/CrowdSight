@@ -1,9 +1,11 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import UseDebouncing from '../Hooks/UseDebouncing';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import toast from 'react-hot-toast';
+import toast, { Toaster } from 'react-hot-toast';
+import ResponsiveSelect from '../Components/ResponsiveSelect';
 
 function PalaceManage() {
   const navigate = useNavigate();
@@ -39,16 +41,34 @@ function PalaceManage() {
 
   const token = localStorage.getItem('token');
 
-  // --- AUTH ERROR HANDLER ---
-  const handleAuthError = (err) => {
+  // --- COMMON API ERROR HANDLER ---
+  const handleApiError = (err, fallbackMessage = "Something went wrong") => {
+    console.error("API Error:", err);
+
+    const message =
+      err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      err?.response?.data?.errors?.[0]?.message ||
+      err?.message ||
+      fallbackMessage;
+
     if (err?.response?.status === 401) {
+      toast.error(message || "Session expired. Please login again.");
+
       localStorage.removeItem("user");
       localStorage.removeItem("userid");
       localStorage.removeItem("token");
       localStorage.removeItem("email");
       localStorage.removeItem("theme");
-      navigate('/login');
+
+      setTimeout(() => {
+        navigate('/login');
+      }, 1000);
+
+      return;
     }
+
+    toast.error(message, { duration: 4000 });
   };
 
   // --- FETCH DYNAMIC LOCATION DATA ---
@@ -60,7 +80,7 @@ function PalaceManage() {
         });
         setStatesList(res?.data?.result || res?.data || []);
       } catch (err) {
-        console.error("Error fetching states:", err);
+        handleApiError(err, "Failed to load states");
       }
     }
     fetchStates();
@@ -81,7 +101,7 @@ function PalaceManage() {
         });
         setCitiesList(res?.data?.result || res?.data || []);
       } catch (err) {
-        console.error("Error fetching cities:", err);
+        handleApiError(err, "Failed to load cities");
       }
     }
     fetchCities();
@@ -100,7 +120,7 @@ function PalaceManage() {
         });
         setAreasList(res?.data?.result || res?.data || []);
       } catch (err) {
-        console.error("Error fetching areas:", err);
+        handleApiError(err, "Failed to load areas");
       }
     }
     fetchAreas();
@@ -123,8 +143,7 @@ function PalaceManage() {
       setTotalPalaces(count);
       setTotalPages(Math.ceil(count / limit) || 1);
     } catch (err) {
-      handleAuthError(err);
-      console.log(err);
+      handleApiError(err, "Failed to load palaces");
     }
   }
 
@@ -141,8 +160,7 @@ function PalaceManage() {
         fetchpalaces();
       }
     } catch (err) {
-      handleAuthError(err);
-      console.log(err);
+      handleApiError(err, "Failed to deactivate palace");
     }
   }
 
@@ -159,8 +177,7 @@ function PalaceManage() {
         fetchpalaces();
       }
     } catch (err) {
-      handleAuthError(err);
-      console.log(err);
+      handleApiError(err, "Failed to activate palace");
     }
   }
 
@@ -178,8 +195,7 @@ function PalaceManage() {
         fetchpalaces();
       }
     } catch (err) {
-      handleAuthError(err);
-      console.log(err);
+      handleApiError(err, "Failed to approve palace");
     }
   }
 
@@ -206,8 +222,7 @@ function PalaceManage() {
         fetchpalaces();
       }
     } catch (err) {
-      handleAuthError(err);
-      console.log(err);
+      handleApiError(err, "Failed to reject palace");
     }
   };
 
@@ -237,8 +252,7 @@ function PalaceManage() {
         fetchpalaces();
       }
     } catch (err) {
-      handleAuthError(err);
-      console.log(err);
+      handleApiError(err, "Failed to delete palace");
     }
   }
 
@@ -250,8 +264,7 @@ function PalaceManage() {
       );
       setview(result?.data?.response);
     } catch (err) {
-      handleAuthError(err);
-      console.log(err);
+      handleApiError(err, "Failed to load palace details");
     }
   }
 
@@ -285,9 +298,7 @@ function PalaceManage() {
         fetchpalaces();
       }
     } catch (err) {
-      handleAuthError(err);
-      toast.error(err?.response?.data?.message || "Failed to delete image");
-      console.error(err);
+      handleApiError(err, "Failed to delete image");
     }
   }
 
@@ -318,6 +329,19 @@ function PalaceManage() {
   const endItem = Math.min(currentPage * limit, totalPalaces);
 
   return (
+    <>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            borderRadius: "12px",
+            fontSize: "14px",
+            fontWeight: "500",
+          },
+        }}
+      />
+
     <div className="w-full rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 md:p-7 shadow-sm backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/70">
 
       {/* Top Controls Toolbar */}
@@ -385,32 +409,33 @@ function PalaceManage() {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="w-full sm:w-auto rounded-2xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all duration-200 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700/80 dark:bg-slate-800/80 dark:text-slate-200 dark:focus:bg-slate-800 dark:focus:ring-blue-500/20"
+            className="w-full min-w-0 max-w-full sm:w-36 rounded-2xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all duration-200 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700/80 dark:bg-slate-800/80 dark:text-slate-200 dark:focus:bg-slate-800 dark:focus:ring-blue-500/20"
           >
             <option value="newest">Newest First</option>
             <option value="oldest">Oldest First</option>
           </select>
 
           {/* Dynamic State Dropdown */}
-          <select
+          <ResponsiveSelect
             value={stateFilter}
-            onChange={(e) => setStateFilter(e.target.value)}
-            className="w-full sm:w-auto rounded-2xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all duration-200 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700/80 dark:bg-slate-800/80 dark:text-slate-200 dark:focus:bg-slate-800 dark:focus:ring-blue-500/20"
-          >
-            <option value="">All States</option>
-            {statesList.map((item) => (
-              <option key={item._id} value={item._id}>
-                {item.statename || item.name}
-              </option>
-            ))}
-          </select>
+            onChange={setStateFilter}
+            ariaLabel="Filter palaces by state"
+            className="w-full sm:w-40"
+            options={[
+              { value: "", label: "All States" },
+              ...statesList.map((item) => ({
+                value: item._id,
+                label: item.statename || item.name || "Unnamed state",
+              })),
+            ]}
+          />
 
           {/* Dynamic City Dropdown */}
           <select
             value={cityFilter}
             onChange={(e) => setCityFilter(e.target.value)}
             disabled={!stateFilter}
-            className="w-full sm:w-auto rounded-2xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all duration-200 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 disabled:opacity-50 dark:border-slate-700/80 dark:bg-slate-800/80 dark:text-slate-200 dark:focus:bg-slate-800 dark:focus:ring-blue-500/20"
+            className="w-full min-w-0 max-w-full sm:w-40 rounded-2xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all duration-200 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 disabled:opacity-50 dark:border-slate-700/80 dark:bg-slate-800/80 dark:text-slate-200 dark:focus:bg-slate-800 dark:focus:ring-blue-500/20"
           >
             <option value="">All Cities</option>
             {citiesList.map((item) => (
@@ -425,7 +450,7 @@ function PalaceManage() {
             value={areaFilter}
             onChange={(e) => setAreaFilter(e.target.value)}
             disabled={!cityFilter}
-            className="w-full sm:w-auto rounded-2xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all duration-200 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 disabled:opacity-50 dark:border-slate-700/80 dark:bg-slate-800/80 dark:text-slate-200 dark:focus:bg-slate-800 dark:focus:ring-blue-500/20"
+            className="w-full min-w-0 max-w-full sm:w-40 rounded-2xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all duration-200 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 disabled:opacity-50 dark:border-slate-700/80 dark:bg-slate-800/80 dark:text-slate-200 dark:focus:bg-slate-800 dark:focus:ring-blue-500/20"
           >
             <option value="">All Areas</option>
             {areasList.map((item) => (
@@ -492,7 +517,11 @@ function PalaceManage() {
                       <p className="text-xs text-slate-500 dark:text-slate-400 wrap-break-word">
                         Email: <span className="font-medium text-slate-700 dark:text-slate-300">{item.email || "N/A"}</span>
                         <span className="hidden sm:inline">{"  ·  "}</span>
+
                         <span className="block sm:inline">Address: <span className="font-medium text-slate-700 dark:text-slate-300">{item.address || "N/A"}</span></span>
+
+                          <span className="hidden sm:inline">{"  ·  "}</span>
+                        <span className="block sm:inline">Admin Email: <span className="font-medium text-slate-700 dark:text-slate-300">{item?.adminid?.email || "N/A"}</span></span>
                       </p>
                       <div className="mt-2 flex items-center gap-2">
                         <span
@@ -662,8 +691,8 @@ function PalaceManage() {
       )}
 
       {/* --- VIEW DETAILS MODAL --- */}
-      {view && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-3 sm:p-4 backdrop-blur-xs">
+      {view && createPortal(
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/60 p-3 sm:p-4 backdrop-blur-xs">
           <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900 max-h-[90vh] flex flex-col">
             
             {/* Header & Main Info */}
@@ -693,6 +722,7 @@ function PalaceManage() {
               <p><strong>State:</strong> {view.areaid?.cityid?.stateid?.statename || "N/A"}</p>
               <p><strong>City:</strong> {view.areaid?.cityid?.cityname || "N/A"}</p>
               <p><strong>Area:</strong> {view.areaid?.areaname || "N/A"}</p>
+
 
               {/* All Images Section */}
               <div className="mt-4 pt-3 border-t border-slate-200/80 dark:border-slate-800">
@@ -747,12 +777,13 @@ function PalaceManage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* --- REJECT REASON MODAL --- */}
-      {rejectModal.show && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-3 sm:p-4 backdrop-blur-xs">
+      {rejectModal.show && createPortal(
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/60 p-3 sm:p-4 backdrop-blur-xs">
           <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
             <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">Reject Palace Request</h3>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -782,10 +813,12 @@ function PalaceManage() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>
+    </>
   );
 }
 

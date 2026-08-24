@@ -185,6 +185,7 @@ exports.forgetotpverify=async(req,res)=>{
         }
 
        if(Number(otp) === user.otp && moment().isSameOrBefore(user.otpexpire)){
+         await user.findOneAndUpdate({ email }, { otp: null, otpexpire: null });
          return res.status(200).json({ message: "Code verify" });
        }
        else if (user.otp !== Number(otp)) {

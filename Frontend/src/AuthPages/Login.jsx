@@ -30,13 +30,15 @@ function Login() {
     if(result.status===200){
        localStorage.setItem('token',result?.data?.token)
       localStorage.setItem('email',result?.data?.user?.email)
-      localStorage.setItem('userid',result?.data?.user?._id)
+      localStorage.setItem('userid',result?.data?.user?.adminid || result?.data?.user?.palaceid || result?.data?.user?._id)
       localStorage.setItem('theme',result?.data?.user?.theme)
       localStorage.setItem('role',result?.data?.user?.role)
 
       const role=result?.data?.user?.role
       if(role==="superadmin")   navigate('/superadmin')
-      if(role==="admin")   navigate('/admin')
+      else if(role==="admin")   navigate('/admin')
+      else if(role==="palace")   navigate('/palace')
+      else if(role==="user")   navigate(-1)
     
     }
        if (!email || !password) {
@@ -55,9 +57,9 @@ function Login() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center 
-                    bg-gray-50 dark:bg-gray-900 px-4 sm:px-6 lg:px-8 py-12 transition-colors duration-200">
-      <div className="max-w-md w-full space-y-8 bg-white dark:bg-gray-800 p-8 rounded-2xl 
+    <div className="min-h-[calc(100dvh-4rem)] flex items-center justify-center
+                    bg-gray-50 dark:bg-gray-900 px-3 sm:px-6 lg:px-8 py-6 sm:py-12 transition-colors duration-200">
+      <div className="max-w-md w-full space-y-6 sm:space-y-8 bg-white dark:bg-gray-800 p-5 sm:p-8 rounded-2xl
                       shadow-xl border border-gray-100 dark:border-gray-700">
         
         {/* ── HEADER & BRANDING ── */}

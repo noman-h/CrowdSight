@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
+import ResponsiveSelect from '../Components/ResponsiveSelect';
 
 function AdminRegisterForm() {
   const navigate = useNavigate();
@@ -248,7 +249,7 @@ function AdminRegisterForm() {
     setServerMessage({ type: '', text: '' });
 
     try {
-      const response = await axios.post(
+      const response = await axios.patch(
         `${import.meta.env.VITE_API_URL}admin/adminotpverify`,
         {
           email: formData.email.trim(),
@@ -425,8 +426,8 @@ function AdminRegisterForm() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 py-10 px-4 sm:px-6 lg:px-8 text-slate-800 dark:text-slate-100 flex justify-center items-center">
-      <div className="max-w-2xl w-full bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-xl p-6 sm:p-10 backdrop-blur-md">
+    <div className="min-h-[calc(100dvh-4rem)] bg-slate-50 dark:bg-slate-900 py-6 sm:py-10 px-3 sm:px-6 lg:px-8 text-slate-800 dark:text-slate-100 flex justify-center items-center">
+      <div className="max-w-2xl w-full bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700/60 shadow-xl p-4 sm:p-10 backdrop-blur-md">
 
         {/* Header with Back Button */}
         <div className="mb-8 border-b border-slate-200 dark:border-slate-700/60 pb-5">
@@ -641,22 +642,21 @@ function AdminRegisterForm() {
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 State <span className="text-rose-500">*</span>
               </label>
-              <select
-                name="stateid"
+              <ResponsiveSelect
                 value={formData.stateid}
-                onChange={handleChange}
+                onChange={(value) => handleChange({ target: { name: 'stateid', value } })}
                 disabled={fetchingStates}
-                className={`w-full px-3 py-2.5 rounded-xl text-xs sm:text-sm border bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 ${
-                  errors.stateid ? 'border-rose-500 focus:ring-rose-500' : 'border-slate-300 dark:border-slate-600 focus:ring-indigo-500'
-                }`}
-              >
-                <option value="">{fetchingStates ? 'Loading...' : '-- Select State --'}</option>
-                {statesList.map((st) => (
-                  <option key={st._id} value={st._id}>
-                    {st.statename || st.name}
-                  </option>
-                ))}
-              </select>
+                invalid={Boolean(errors.stateid)}
+                ariaLabel="Select state"
+                className="w-full"
+                options={[
+                  { value: '', label: fetchingStates ? 'Loading...' : '-- Select State --' },
+                  ...statesList.map((state) => ({
+                    value: state._id,
+                    label: state.statename || state.name || 'Unnamed state',
+                  })),
+                ]}
+              />
               {errors.stateid && <p className="text-xs text-rose-500 mt-1 font-medium">{errors.stateid}</p>}
             </div>
 
@@ -665,24 +665,24 @@ function AdminRegisterForm() {
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 City <span className="text-rose-500">*</span>
               </label>
-              <select
-                name="cityid"
+              <ResponsiveSelect
                 value={formData.cityid}
-                onChange={handleChange}
+                onChange={(value) => handleChange({ target: { name: 'cityid', value } })}
                 disabled={!formData.stateid || fetchingCities}
-                className={`w-full px-3 py-2.5 rounded-xl text-xs sm:text-sm border bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 disabled:opacity-50 ${
-                  errors.cityid ? 'border-rose-500 focus:ring-rose-500' : 'border-slate-300 dark:border-slate-600 focus:ring-indigo-500'
-                }`}
-              >
-                <option value="">
-                  {!formData.stateid ? 'Select State First' : fetchingCities ? 'Loading...' : '-- Select City --'}
-                </option>
-                {citiesList.map((ct) => (
-                  <option key={ct._id} value={ct._id}>
-                    {ct.cityname || ct.name}
-                  </option>
-                ))}
-              </select>
+                invalid={Boolean(errors.cityid)}
+                ariaLabel="Select city"
+                className="w-full"
+                options={[
+                  {
+                    value: '',
+                    label: !formData.stateid ? 'Select State First' : fetchingCities ? 'Loading...' : '-- Select City --',
+                  },
+                  ...citiesList.map((city) => ({
+                    value: city._id,
+                    label: city.cityname || city.name || 'Unnamed city',
+                  })),
+                ]}
+              />
               {errors.cityid && <p className="text-xs text-rose-500 mt-1 font-medium">{errors.cityid}</p>}
             </div>
 
@@ -691,24 +691,24 @@ function AdminRegisterForm() {
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 Area <span className="text-rose-500">*</span>
               </label>
-              <select
-                name="areaid"
+              <ResponsiveSelect
                 value={formData.areaid}
-                onChange={handleChange}
+                onChange={(value) => handleChange({ target: { name: 'areaid', value } })}
                 disabled={!formData.cityid || fetchingAreas}
-                className={`w-full px-3 py-2.5 rounded-xl text-xs sm:text-sm border bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 disabled:opacity-50 ${
-                  errors.areaid ? 'border-rose-500 focus:ring-rose-500' : 'border-slate-300 dark:border-slate-600 focus:ring-indigo-500'
-                }`}
-              >
-                <option value="">
-                  {!formData.cityid ? 'Select City First' : fetchingAreas ? 'Loading...' : '-- Select Area --'}
-                </option>
-                {areasList.map((ar) => (
-                  <option key={ar._id} value={ar._id}>
-                    {ar.areaname || ar.name}
-                  </option>
-                ))}
-              </select>
+                invalid={Boolean(errors.areaid)}
+                ariaLabel="Select area"
+                className="w-full"
+                options={[
+                  {
+                    value: '',
+                    label: !formData.cityid ? 'Select City First' : fetchingAreas ? 'Loading...' : '-- Select Area --',
+                  },
+                  ...areasList.map((area) => ({
+                    value: area._id,
+                    label: area.areaname || area.name || 'Unnamed area',
+                  })),
+                ]}
+              />
               {errors.areaid && <p className="text-xs text-rose-500 mt-1 font-medium">{errors.areaid}</p>}
             </div>
 

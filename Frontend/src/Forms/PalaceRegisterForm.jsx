@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
+import ResponsiveSelect from "../Components/ResponsiveSelect";
 
 function PalaceRegisterForm() {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ function PalaceRegisterForm() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    phone: "",
     otp: "",
     stateid: "",
     cityid: "",
@@ -381,6 +383,7 @@ function PalaceRegisterForm() {
         setFormData({
   name: palace?.name || "",
   email: palace?.email || "",
+  phone: palace?.phone || "",
   otp: "",
   stateid: stateId,
   cityid: cityId,
@@ -709,6 +712,14 @@ setImagePreviews(existingImages);
         "Email is required.";
     }
 
+    if (!formData.phone.trim()) {
+      newErrors.phone =
+        "Phone number is required.";
+    } else if (!/^[0-9]{10}$/.test(formData.phone.trim())) {
+      newErrors.phone =
+        "Enter a valid 10-digit phone number.";
+    }
+
     if (!isEmailVerified) {
       newErrors.email =
         "Please verify the email.";
@@ -776,6 +787,7 @@ setImagePreviews(existingImages);
   setFormData({
     name: "",
     email: "",
+    phone: "",
     otp: "",
     stateid: "",
     cityid: "",
@@ -822,6 +834,11 @@ setImagePreviews(existingImages);
       submitData.append(
         "email",
         formData.email.trim()
+      );
+
+      submitData.append(
+        "phone",
+        formData.phone.trim()
       );
 
       submitData.append(
@@ -978,7 +995,7 @@ setImagePreviews(existingImages);
         }}
       />
 
-      <div className="min-h-screen bg-linear-to-br from-slate-100 via-white to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950 py-8 sm:py-12 px-4">
+      <div className="min-h-[calc(100dvh-4rem)] bg-linear-to-br from-slate-100 via-white to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950 py-5 sm:py-12 px-3 sm:px-4">
 
         <div className="max-w-4xl mx-auto">
 
@@ -988,7 +1005,7 @@ setImagePreviews(existingImages);
 
             {/* HEADER */}
 
-            <div className="relative px-6 sm:px-10 py-8 sm:py-10 bg-linear-to-r from-indigo-600 via-indigo-600 to-violet-600">
+            <div className="relative px-4 sm:px-10 py-6 sm:py-10 bg-linear-to-r from-indigo-600 via-indigo-600 to-violet-600">
 
               <div className="absolute inset-0 opacity-10">
                 <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-white" />
@@ -1045,7 +1062,7 @@ setImagePreviews(existingImages);
 
             <form
               onSubmit={handleSubmit}
-              className="p-6 sm:p-10 space-y-8"
+              className="p-4 sm:p-10 space-y-6 sm:space-y-8"
             >
 
               {/* =================================================
@@ -1319,6 +1336,34 @@ setImagePreviews(existingImages);
                       </div>
                     )}
 
+{/* PHONE NUMBER */}
+<div>
+  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">
+    Owner Phone
+    <span className="text-red-500 ml-1">*</span>
+  </label>
+
+  <input
+    type="tel"
+    name="phone"
+    value={formData.phone}
+    onChange={handleChange}
+    placeholder="Enter 10-digit phone number"
+    maxLength={10}
+    inputMode="numeric"
+    className={`w-full px-4 py-3.5 rounded-xl border bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 outline-none transition-all duration-200 ${
+      errors.phone
+        ? "border-red-400 focus:ring-4 focus:ring-red-100 dark:focus:ring-red-950/40"
+        : "border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-950/40"
+    }`}
+  />
+
+  {errors.phone && (
+    <p className="text-red-500 text-xs mt-2">
+      {errors.phone}
+    </p>
+  )}
+</div>
                 </div>
 
               </div>
@@ -1327,9 +1372,9 @@ setImagePreviews(existingImages);
                   LOCATION
               ================================================= */}
 
-              <div className="rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+              <div className="rounded-2xl border border-slate-200 dark:border-slate-700 overflow-visible">
 
-                <div className="px-5 py-4 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700">
+                <div className="rounded-t-2xl px-5 py-4 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700">
 
                   <div className="flex items-center gap-3">
 
@@ -1368,34 +1413,28 @@ setImagePreviews(existingImages);
                         </span>
                       </label>
 
-                      <select
-                        name="stateid"
+                      <ResponsiveSelect
                         value={formData.stateid}
-                        onChange={handleChange}
+                        onChange={(value) => handleChange({ target: { name: "stateid", value } })}
                         disabled={
                           role === "admin" ||
                           fetchingStates
                         }
-                        className="w-full px-3.5 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-950/40 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
-                      >
-
-                        <option value="">
-                          {role === "admin"
-                            ? "Loading assigned state..."
-                            : "Select State"}
-                        </option>
-
-                        {statesList.map((state) => (
-                          <option
-                            key={state._id}
-                            value={state._id}
-                          >
-                            {state.statename ||
-                              state.name}
-                          </option>
-                        ))}
-
-                      </select>
+                        invalid={Boolean(errors.stateid)}
+                        comfortable
+                        ariaLabel="Select palace state"
+                        className="w-full"
+                        options={[
+                          {
+                            value: "",
+                            label: role === "admin" ? "Loading assigned state..." : "Select State",
+                          },
+                          ...statesList.map((state) => ({
+                            value: state._id,
+                            label: state.statename || state.name || "Unnamed state",
+                          })),
+                        ]}
+                      />
 
                       {errors.stateid && (
                         <p className="text-red-500 text-xs mt-2">
@@ -1416,37 +1455,35 @@ setImagePreviews(existingImages);
                         </span>
                       </label>
 
-                      <select
-                        name="cityid"
+                      <ResponsiveSelect
                         value={formData.cityid}
-                        onChange={handleChange}
+                        onChange={(value) => handleChange({ target: { name: "cityid", value } })}
                         disabled={
                           role === "admin" ||
                           !formData.stateid ||
                           fetchingCities
                         }
-                        className="w-full px-3.5 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-950/40 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
-                      >
-
-                        <option value="">
-                          {role === "admin"
-                            ? "Loading assigned city..."
-                            : !formData.stateid
-                            ? "Select State First"
-                            : "Select City"}
-                        </option>
-
-                        {citiesList.map((city) => (
-                          <option
-                            key={city._id}
-                            value={city._id}
-                          >
-                            {city.cityname ||
-                              city.name}
-                          </option>
-                        ))}
-
-                      </select>
+                        invalid={Boolean(errors.cityid)}
+                        comfortable
+                        ariaLabel="Select palace city"
+                        className="w-full"
+                        options={[
+                          {
+                            value: "",
+                            label: role === "admin"
+                              ? "Loading assigned city..."
+                              : !formData.stateid
+                                ? "Select State First"
+                                : fetchingCities
+                                  ? "Loading..."
+                                  : "Select City",
+                          },
+                          ...citiesList.map((city) => ({
+                            value: city._id,
+                            label: city.cityname || city.name || "Unnamed city",
+                          })),
+                        ]}
+                      />
 
                       {errors.cityid && (
                         <p className="text-red-500 text-xs mt-2">
@@ -1467,37 +1504,35 @@ setImagePreviews(existingImages);
                         </span>
                       </label>
 
-                      <select
-                        name="areaid"
+                      <ResponsiveSelect
                         value={formData.areaid}
-                        onChange={handleChange}
+                        onChange={(value) => handleChange({ target: { name: "areaid", value } })}
                         disabled={
                           role === "admin" ||
                           !formData.cityid ||
                           fetchingAreas
                         }
-                        className="w-full px-3.5 py-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-950/40 disabled:opacity-60 disabled:cursor-not-allowed transition-all"
-                      >
-
-                        <option value="">
-                          {role === "admin"
-                            ? "Loading assigned area..."
-                            : !formData.cityid
-                            ? "Select City First"
-                            : "Select Area"}
-                        </option>
-
-                        {areasList.map((area) => (
-                          <option
-                            key={area._id}
-                            value={area._id}
-                          >
-                            {area.areaname ||
-                              area.name}
-                          </option>
-                        ))}
-
-                      </select>
+                        invalid={Boolean(errors.areaid)}
+                        comfortable
+                        ariaLabel="Select palace area"
+                        className="w-full"
+                        options={[
+                          {
+                            value: "",
+                            label: role === "admin"
+                              ? "Loading assigned area..."
+                              : !formData.cityid
+                                ? "Select City First"
+                                : fetchingAreas
+                                  ? "Loading..."
+                                  : "Select Area",
+                          },
+                          ...areasList.map((area) => ({
+                            value: area._id,
+                            label: area.areaname || area.name || "Unnamed area",
+                          })),
+                        ]}
+                      />
 
                       {errors.areaid && (
                         <p className="text-red-500 text-xs mt-2">

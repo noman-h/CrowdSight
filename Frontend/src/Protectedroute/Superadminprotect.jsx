@@ -8,6 +8,7 @@ function Superadminprotect({children}) {
 
   if(role==="superadmin" && token) return children
   else if(role==="admin" && token)return  <Navigate to='/admin' />
+  else if(role==="palace" && token)return  <Navigate to='/palace' />
   else return  <Navigate to='/login' />
 }
 

@@ -45,7 +45,7 @@ exports.updatestate=async (req,res)=>{
 
 exports.getallstate = async (req, res) => {
   try {
-    const { search = '', activestatus, sort = '', page = 1, limit = 6 } = req.query;
+    const { search = '', activestatus, sort = '', page, limit } = req.query;
 
     
     const query = {};
@@ -67,8 +67,8 @@ exports.getallstate = async (req, res) => {
     else if (sort === 'newest') sortOption = { createdAt: -1 };
     else if (sort === 'oldest') sortOption = { createdAt: 1 };
 
-    const pageNum = parseInt(page, 10) || 1;
-    const limitNum = parseInt(limit, 10) || 6;
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
     const skip = (pageNum - 1) * limitNum;
 
     

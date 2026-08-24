@@ -14,21 +14,21 @@ function SuperadminSidebar({ activewindow, setactivewindow }) {
 ]
   return (
     <aside
-      className={`relative flex flex-col h-screen bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transition-all duration-300 ${
-        isCollapsed ? 'w-20' : 'w-64'
+      className={`relative z-20 flex h-auto w-full shrink-0 flex-col border-b border-gray-200 bg-white transition-all duration-300 dark:border-gray-800 dark:bg-gray-900 md:h-full md:border-r md:border-b-0 ${
+        isCollapsed ? 'md:w-20' : 'md:w-64'
       }`}
     >
       {/* ── COLLAPSE / UNCOLLAPSE BUTTON ── */}
       <button
         onClick={() => setIsCollapsed(!isCollapsed)}
-        className="absolute -right-3 top-7 z-10 p-1.5 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 shadow-sm focus:outline-none transition-transform"
+        className="absolute -right-3 top-7 z-10 hidden rounded-full border border-gray-200 bg-white p-1.5 text-gray-600 shadow-sm transition-transform hover:bg-gray-100 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 md:block"
         aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
         {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
       </button>
 
       {/* ── SIDEBAR HEADER ── */}
-      <div className="flex items-center h-16 px-4 border-b border-gray-100 dark:border-gray-800">
+      <div className="hidden h-16 items-center border-b border-gray-100 px-4 dark:border-gray-800 md:flex">
         <div className="flex items-center gap-3 overflow-hidden">
           <div className="h-9 w-9 min-w-9 rounded-xl bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white font-bold text-lg">
             S
@@ -42,7 +42,7 @@ function SuperadminSidebar({ activewindow, setactivewindow }) {
       </div>
 
       {/* ── NAVIGATION BUTTONS ── */}
-      <nav className="flex-1 p-3 space-y-1.5 overflow-y-auto">
+      <nav className="flex w-full gap-1 overflow-x-auto p-2 md:flex-1 md:flex-col md:space-y-1.5 md:overflow-y-auto md:p-3">
         {navItems.map((item) => {
           const Icon = item.icon
           const isActive = activewindow === item.id
@@ -52,7 +52,7 @@ function SuperadminSidebar({ activewindow, setactivewindow }) {
               key={item.id}
               onClick={() => setactivewindow(item.id)}
               title={isCollapsed ? item.label : undefined}
-              className={`flex items-center w-full px-3 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 group ${
+              className={`group flex w-auto shrink-0 items-center justify-center rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200 md:w-full md:justify-start ${
                 isActive
                   ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400 font-semibold'
                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/60 hover:text-gray-900 dark:hover:text-gray-200'
@@ -66,9 +66,7 @@ function SuperadminSidebar({ activewindow, setactivewindow }) {
                     : 'text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300'
                 }`}
               />
-              {!isCollapsed && (
-                <span className="ml-3 truncate">{item.label}</span>
-              )}
+              <span className={`ml-2 whitespace-nowrap md:ml-3 md:truncate ${isCollapsed ? 'md:hidden' : ''}`}>{item.label}</span>
             </button>
           )
         })}

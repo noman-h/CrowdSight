@@ -22,7 +22,7 @@ function Superadminhome() {
   }
 
   return (
-    <div className="flex h-screen w-full bg-gray-50 dark:bg-gray-950 transition-colors duration-200 overflow-hidden">
+    <div className="flex h-[calc(100dvh-4rem)] min-h-0 w-full flex-col overflow-hidden bg-gray-50 transition-colors duration-200 dark:bg-gray-950 md:flex-row">
       
       {/* ── SIDEBAR ── */}
       <SuperadminSidebar
@@ -31,26 +31,26 @@ function Superadminhome() {
       />
 
       {/* ── MAIN CONTENT AREA ── */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         
         {/* Top Header Bar */}
-        <header className="h-16 px-6 sm:px-8 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-between transition-colors duration-200">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white capitalize">
+        <header className="flex min-h-14 shrink-0 items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-2 transition-colors duration-200 dark:border-gray-800 dark:bg-gray-900 sm:min-h-16 sm:px-6 lg:px-8">
+          <h1 className="min-w-0 truncate text-base font-bold capitalize text-gray-900 dark:text-white sm:text-xl">
             {titles[activewindow] || 'Dashboard'}
           </h1>
           <div className="flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
             <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse"></span>
-            Superadmin Panel
+            <span className="hidden sm:inline">Superadmin Panel</span>
           </div>
         </header>
 
         {/* Dynamic View Panel */}
-        <main className="flex-1 p-6 sm:p-8 overflow-y-auto scrollbar-thin scrollbar-thumb-sky-300 bg-gray-50 dark:bg-gray-950 transition-colors duration-200">
+        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto bg-gray-50 p-3 transition-colors duration-200 scrollbar-thin scrollbar-thumb-sky-300 dark:bg-gray-950 sm:p-6 lg:p-8">
             
          {/* Toast Notification Container */}
        <Toaster position="bottom-right" reverseOrder={false} />
 
-          <div className="max-w-7xl mx-auto">
+          <div className="mx-auto w-full min-w-0 max-w-7xl">
             {activewindow === 'dashboard' && <SuperadminDashboard />}
             {activewindow === 'admins' && <AdminManage />}
             {activewindow === 'palaces' && <PalacesManage />}

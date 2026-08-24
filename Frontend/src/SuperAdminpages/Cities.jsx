@@ -4,6 +4,7 @@ import UseDebouncing from '../Hooks/UseDebouncing';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import toast, { Toaster } from 'react-hot-toast';
+import ResponsiveSelect from '../Components/ResponsiveSelect';
 
 function Cities() {
   const navigate = useNavigate();
@@ -280,18 +281,19 @@ function Cities() {
           </div>
 
           {/* Filter by State */}
-          <select
+          <ResponsiveSelect
             value={statesort}
-            onChange={(e) => setstatesort(e.target.value)}
-            className="rounded-2xl border border-slate-200 bg-slate-50/50 px-3.5 py-2.5 text-sm font-medium text-slate-700 outline-none transition-all duration-200 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700/80 dark:bg-slate-800/80 dark:text-slate-200 dark:focus:bg-slate-800 dark:focus:ring-blue-500/20"
-          >
-            <option value="">All States</option>
-            {statedata.map((st) => (
-              <option key={st._id} value={st._id}>
-                {st.statename}
-              </option>
-            ))}
-          </select>
+            onChange={setstatesort}
+            ariaLabel="Filter cities by state"
+            className="w-full sm:w-44"
+            options={[
+              { value: "", label: "All States" },
+              ...statedata.map((state) => ({
+                value: state._id,
+                label: state.statename || state.name || "Unnamed state",
+              })),
+            ]}
+          />
 
           {/* Sort Dropdown */}
           <select
@@ -501,9 +503,9 @@ function Cities() {
      
        {/* View City Modal */}
       {view && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-slate-800">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 sm:p-4 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="w-full max-w-lg max-h-[calc(100dvh-1.5rem)] overflow-y-auto rounded-3xl border border-slate-200/80 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex items-center justify-between border-b border-slate-100 px-4 sm:px-6 py-4 dark:border-slate-800">
               <h2 className="text-base font-semibold text-slate-900 dark:text-white">City Details</h2>
               <button
                 onClick={() => setview(null)}
@@ -512,8 +514,8 @@ function Cities() {
                 ✕
               </button>
             </div>
-            <div className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="p-4 sm:p-6 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="rounded-2xl bg-slate-50 p-3.5 dark:bg-slate-800/50">
                   <p className="text-xs text-slate-400">City Name</p>
                   <p className="mt-0.5 font-semibold capitalize text-slate-800 dark:text-slate-100">{view.cityname}</p>
@@ -539,7 +541,7 @@ function Cities() {
                   </span>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
                   <p className="text-slate-400">Created At</p>
                   <p className="mt-0.5 font-medium text-slate-700 dark:text-slate-300">
@@ -568,8 +570,8 @@ function Cities() {
 
        {/* Add / Edit Form Modal */}
       {popup === "cityadd" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="w-full max-w-sm rounded-3xl border border-slate-200/80 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 sm:p-4 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="w-full max-w-sm max-h-[calc(100dvh-1.5rem)] overflow-y-auto rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="font-semibold text-slate-900 dark:text-white">
                 {cityd._id ? "Edit City" : "Add New City"}

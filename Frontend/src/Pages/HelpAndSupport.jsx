@@ -169,11 +169,11 @@ function HelpAndSupport() {
   };
 
   return (
-    <div className="p-4 sm:p-6 bg-slate-50 dark:bg-slate-900 min-h-screen text-slate-800 dark:text-slate-100 transition-colors duration-200">
+    <div className="p-3 sm:p-6 bg-slate-50 dark:bg-slate-900 min-h-[calc(100dvh-4rem)] text-slate-800 dark:text-slate-100 transition-colors duration-200">
       <div className="max-w-7xl mx-auto space-y-6">
 
         {/* Header Section */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-800/60 p-6 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-sm dark:shadow-none backdrop-blur-md">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-800/60 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-sm dark:shadow-none backdrop-blur-md">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-wide">Help & Support</h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
@@ -226,7 +226,7 @@ function HelpAndSupport() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
           {/* Main Action Area */}
-          <div className="lg:col-span-2 bg-white dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-sm dark:shadow-none backdrop-blur-md p-6 sm:p-8 space-y-8">
+          <div className="lg:col-span-2 bg-white dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-sm dark:shadow-none backdrop-blur-md p-4 sm:p-8 space-y-6 sm:space-y-8">
             
             {activeTab === "admin" ? (
               <div className="w-full space-y-6">
@@ -426,8 +426,8 @@ function HelpAndSupport() {
 
       {/* View Details Popup Modal */}
       {isModalOpen && statusResult && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl max-w-lg w-full p-6 space-y-6 relative overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl max-w-lg w-full max-h-[calc(100dvh-1.5rem)] p-4 sm:p-6 space-y-6 relative overflow-y-auto">
             
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-700">
@@ -475,7 +475,7 @@ function HelpAndSupport() {
               )}
 
               {/* Detail Items Grid */}
-              <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div className="bg-slate-50 dark:bg-slate-700/30 p-3 rounded-lg space-y-1">
                   <span className="text-slate-400 dark:text-slate-500 block font-medium">Request ID</span>
                   <span className="text-slate-800 dark:text-slate-200 font-semibold">{statusResult.id}</span>
@@ -522,12 +522,12 @@ function HelpAndSupport() {
             </div>
 
             {/* Modal Footer Actions */}
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
                 disabled={isSendingOtp}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors disabled:opacity-50"
+                className="w-full sm:w-auto px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors disabled:opacity-50"
               >
                 Close
               </button>
@@ -537,7 +537,7 @@ function HelpAndSupport() {
                 type="button"
                 onClick={handleInitiateOtp}
                 disabled={isSendingOtp}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm min-w-30"
+                className="w-full sm:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm min-w-30"
               >
                 {isSendingOtp ? (
                   <>
@@ -561,8 +561,8 @@ function HelpAndSupport() {
 
       {/* OTP Verification Popup Modal */}
       {isOtpModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl max-w-md w-full p-6 space-y-6 relative overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl max-w-md w-full max-h-[calc(100dvh-1.5rem)] p-4 sm:p-6 space-y-6 relative overflow-y-auto">
             
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-700">
@@ -626,19 +626,19 @@ function HelpAndSupport() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+              <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 sm:gap-3 pt-3 border-t border-slate-200 dark:border-slate-700">
                 <button
                   type="button"
                   onClick={() => setIsOtpModalOpen(false)}
                   disabled={isVerifying}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors disabled:opacity-50"
+                  className="w-full sm:w-auto px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isVerifying || !otpInput.trim()}
-                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm min-w-30"
+                  className="w-full sm:w-auto px-5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm min-w-30"
                 >
                   {isVerifying ? (
                     <>

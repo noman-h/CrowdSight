@@ -452,9 +452,9 @@ function Statemanage() {
 
       {/* View State Modal */}
       {view && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-slate-800">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 sm:p-4 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="w-full max-w-lg max-h-[calc(100dvh-1.5rem)] overflow-y-auto rounded-3xl border border-slate-200/80 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex items-center justify-between border-b border-slate-100 px-4 sm:px-6 py-4 dark:border-slate-800">
               <h2 className="text-base font-semibold text-slate-900 dark:text-white">State Information</h2>
               <button
                 onClick={() => setview(null)}
@@ -463,8 +463,8 @@ function Statemanage() {
                 ✕
               </button>
             </div>
-            <div className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="p-4 sm:p-6 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="rounded-2xl bg-slate-50 p-3.5 dark:bg-slate-800/50">
                   <p className="text-xs text-slate-400">State Name</p>
                   <p className="mt-0.5 font-semibold capitalize text-slate-800 dark:text-slate-100">{view.statename}</p>
@@ -488,7 +488,7 @@ function Statemanage() {
                   </span>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                 <div>
                   <p className="text-slate-400">Created At</p>
                   <p className="mt-0.5 font-medium text-slate-700 dark:text-slate-300">{new Date(view.createdAt).toLocaleString()}</p>
@@ -513,8 +513,8 @@ function Statemanage() {
 
       {/* Add / Edit Form Modal */}
       {popup === "stateadd" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="w-full max-w-sm rounded-3xl border border-slate-200/80 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 sm:p-4 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="w-full max-w-sm max-h-[calc(100dvh-1.5rem)] overflow-y-auto rounded-3xl border border-slate-200/80 bg-white p-4 sm:p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="font-semibold text-slate-900 dark:text-white">
                 {stated._id ? "Edit State" : "Add New State"}

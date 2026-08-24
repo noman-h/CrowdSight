@@ -113,8 +113,8 @@ function Forgotpass() {
   
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-      <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 sm:p-8 transition-all">
+    <div className="min-h-[calc(100dvh-4rem)] flex items-center justify-center p-3 sm:p-4 bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+      <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-5 sm:p-8 transition-all">
 
         {/* Step Indicator */}
         {step < 4 && (

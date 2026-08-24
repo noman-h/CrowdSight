@@ -4,22 +4,25 @@ const palaces=require('../Model/PalaceModel')
 const admins=require('../Model/AdminModel')
 const palaceimages=require('../Model/PalaceImagesModel')
 const { v4: uuidv4 } = require("uuid");
+const bcrypt=require('bcrypt')
+const users=require('../Model/UserModel')
 
 const { uploadimage } = require('../Utils/FileUpload');
 const moment = require("moment");
 
 const HtmlTemplate = require("../Utils/HtmlTemplate");
-const sendmail = require("../Utils/Helper");
-const PalaceImagesModel = require('../Model/PalaceImagesModel');
+const sendmail = require("../Utils/helper");
+
 
 const password = uuidv4()
 
 exports.addpalace=async (req,res)=>{
+  const session=await mongoose.startSession();
     try{
+        const {name,email,phone,address,areaid,description}=req.body
 
-        const {name,email,address,areaid,description}=req.body
 
-        if(!(name && address && areaid && description)){
+        if(!(name && phone && address && areaid && description)){
             return res.status(400).json({message:"bad request data is missing"})
         }
 
@@ -62,10 +65,11 @@ const areaadmin = areaadmins[randomIndex];
 
     for (const i of uploaddata) {
 
-        await palaceimages.create({
+        await palaceimages.create([{
             image: i.url,
             palaceid: palace._id
-        });
+        }]
+      ,{session});
 
     }
 }
@@ -78,12 +82,12 @@ const areaadmin = areaadmins[randomIndex];
             );
         
             if (emailid) {
-              const data = {name,email,address,areaid,adminid:areaadmin._id,description}
+              const data = {name,email,phone,address,areaid,adminid:areaadmin._id,description}
         
-              const response = await palaces.findOneAndUpdate({ email }, {
+               await palaces.findOneAndUpdate({ email }, {
                 ...data,
                 checkid,
-              });
+              },{session});
         
               return res.status(201).json({ message: "palace requested successfully" });
             }
@@ -96,15 +100,18 @@ const areaadmin = areaadmins[randomIndex];
         
             return res.status(500).json({ message: "internal server error", err });
           }
+          finally{
+            await session.endSession()
+          }
         };
 
 exports.updatepalace=async (req,res)=>{
     try{
 
-        const {name,email,address,areaid,adminid,description}=req.body
+        const {name,email,phone,address,areaid,adminid,description}=req.body
         const {_id}=req.params
 
-        if(!(_id && name && address && areaid && description)){
+        if(!(_id && name && email && phone && address && areaid && description)){
             return res.status(400).json({message:"bad request data is missing"})
         }
 
@@ -140,6 +147,7 @@ const response = await palaces.findByIdAndUpdate(
     {
         name,
         email,
+        phone,
         address,
         areaid,
         adminid,
@@ -216,7 +224,6 @@ return res.status(201).json({ message: "palace updated successfully" });
      const pageNum = parseInt(page) || 1;
      const skipNum = skip !== undefined ? parseInt(skip) : (pageNum - 1) * limitNum;
  
-     // 6. Build the Aggregation Pipeline
      const pipeline = [
        // Match initial admin conditions (status, search, areaid)
        { $match: matchConditions },
@@ -238,32 +245,27 @@ return res.status(201).json({ message: "palace updated successfully" });
   }
 },
  { $unwind: { path: "$adminid", preserveNullAndEmptyArrays: true } },
-       // Join with Areas collection
        {
          $lookup: {
-           from: "areas", // DB collection name for areas
+           from: "areas",
            localField: "areaid",
            foreignField: "_id",
            as: "areaid"
          }
        },
        { $unwind: { path: "$areaid", preserveNullAndEmptyArrays: true } },
- 
-       // Join with Cities collection
        {
          $lookup: {
-           from: "cities", // DB collection name for cities
+           from: "cities", 
            localField: "areaid.cityid",
            foreignField: "_id",
            as: "areaid.cityid"
          }
        },
        { $unwind: { path: "$areaid.cityid", preserveNullAndEmptyArrays: true } },
- 
-       // Join with States collection
        {
          $lookup: {
-           from: "states", // DB collection name for states
+           from: "states", 
            localField: "areaid.cityid.stateid",
            foreignField: "_id",
            as: "areaid.cityid.stateid"
@@ -288,7 +290,6 @@ return res.status(201).json({ message: "palace updated successfully" });
          $match: { "adminid._id": new mongoose.Types.ObjectId(adminsort) }
        });
      }
-     console.log(pipeline);
      
  
      // 7. Get Total Count (using $facet or a separate aggregate)
@@ -355,155 +356,7 @@ exports.palacereadone = async (req, res) => {
     });
   }
 };
- exports.palacereadalladmin = async (req, res) => {
-   try {
-     const { 
-       search, 
-       statesort, 
-       citysort, 
-       areasort, 
-       sort, 
-       activestatus, 
-       approvestatus,
-       adminsort,
-       page, 
-       skip, 
-       limit 
-     } = req.query;
- 
-     let matchConditions = {};
- 
-     // 1. Status Filter
-     if (activestatus === "true") {
-       matchConditions.activestatus = true;
-       matchConditions.approvestatus = "approved";
-     } else if (activestatus === "false") {
-       matchConditions.activestatus = false;
-       matchConditions.approvestatus = "approved";
-     } else if (approvestatus === "pending") {
-       matchConditions.approvestatus = "pending";
-     } else if (approvestatus === "rejected") {
-       matchConditions.approvestatus = "rejected";
-     }
- 
-     // 2. Direct Area Filter (if selected directly)
-     if (areasort) {
-       matchConditions.areaid = new mongoose.Types.ObjectId(areasort);
-     }
- 
-     // 3. Search Filter (Safe Regex)
-     if (search && search.trim() !== "") {
-       const escapedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-       matchConditions.$or = [
-         { name: { $regex: escapedSearch, $options: "i" } },
-         { email: { $regex: escapedSearch, $options: "i" } }
-       ];
-     }
- 
-     // 4. Sorting Options
-     let sortStage = { createdAt: -1 }; // Default: Newest First
-     if (sort === "newest") sortStage = { createdAt: -1 };
-     else if (sort === "oldest") sortStage = { createdAt: 1 };
- 
-     // 5. Pagination Calculation
-     const limitNum = parseInt(limit) || 10;
-     const pageNum = parseInt(page) || 1;
-     const skipNum = skip !== undefined ? parseInt(skip) : (pageNum - 1) * limitNum;
- 
-     // 6. Build the Aggregation Pipeline
-     const pipeline = [
-       // Match initial admin conditions (status, search, areaid)
-       { $match: matchConditions },
-
-       {
-  $lookup: {
-    from: "palaceimages",
-    localField: "_id",
-    foreignField: "palaceid",
-    as: "images"
-  }
-},
-       {
-  $lookup: {
-    from: "admins",
-    localField: "adminid",
-    foreignField: "_id",
-    as: "adminid"
-  }
-},
- { $unwind: { path: "$adminid", preserveNullAndEmptyArrays: true } },
-       // Join with Areas collection
-       {
-         $lookup: {
-           from: "areas", // DB collection name for areas
-           localField: "areaid",
-           foreignField: "_id",
-           as: "areaid"
-         }
-       },
-       { $unwind: { path: "$areaid", preserveNullAndEmptyArrays: true } },
- 
-       // Join with Cities collection
-       {
-         $lookup: {
-           from: "cities", // DB collection name for cities
-           localField: "areaid.cityid",
-           foreignField: "_id",
-           as: "areaid.cityid"
-         }
-       },
-       { $unwind: { path: "$areaid.cityid", preserveNullAndEmptyArrays: true } },
- 
-       // Join with States collection
-       {
-         $lookup: {
-           from: "states", // DB collection name for states
-           localField: "areaid.cityid.stateid",
-           foreignField: "_id",
-           as: "areaid.cityid.stateid"
-         }
-       },
-       { $unwind: { path: "$areaid.cityid.stateid", preserveNullAndEmptyArrays: true } }
-     ];
- 
-     // Filter by City or State after joins (if selected)
-     if (citysort && !areasort) {
-       pipeline.push({
-         $match: { "areaid.cityid._id": new mongoose.Types.ObjectId(citysort) }
-       });
-     } else if (statesort && !areasort && !citysort) {
-       pipeline.push({
-         $match: { "areaid.cityid.stateid._id": new mongoose.Types.ObjectId(statesort) }
-       });
-     }
-
-     if(adminsort){
-        pipeline.push({
-         $match: { "adminid._id": new mongoose.Types.ObjectId(adminsort) }
-       });
-     }
- 
-     // 7. Get Total Count (using $facet or a separate aggregate)
-     const countPipeline = [...pipeline, { $count: "total" }];
-     const countResult = await palaces.aggregate(countPipeline);
-     const totalcount = countResult.length > 0 ? countResult[0].total : 0;
- 
-     // 8. Add Sorting & Pagination to the Main Pipeline
-     pipeline.push(
-       { $sort: sortStage },
-       { $skip: skipNum },
-       { $limit: limitNum }
-     );
- 
-     const response = await palaces.aggregate(pipeline);
- 
-     return res.status(200).json({ response, totalcount });
-   } catch (err) {
-     console.error("Error in adminreadall:", err);
-     return res.status(500).json({ message: "Internal server error" });
-   }
- };
-        
+    
 
 exports.palacereadone = async (req, res) => {
   try {
@@ -622,6 +475,7 @@ exports.palacerecoverdelete = async (req, res) => {
 
 
 exports.palaceapprove = async (req, res) => {
+  const session=await mongoose.startSession();
   try {
     const { _id } = req.body;
 
@@ -630,29 +484,35 @@ exports.palaceapprove = async (req, res) => {
     }
 
     const palacedetail = await palaces.findOne({ _id });
-    if (!palacedetail) return res.status(404).json({ message: "admin not found" });
+    if (!palacedetail) return res.status(404).json({ message: "palace not found" });
+
+     const existuser=await users.findOne({email:palacedetail.email})
+    if(existuser) return res.status(409).json({message:"user already exist"})
 
     const saltrounds = 10;
     const salt = bcrypt.genSaltSync(saltrounds);
     const hashpass = bcrypt.hashSync(password, salt);
 
-    const existuser=await users.findOne({email:palacedetail.email})
-    
-    if(existuser) return res.status(409).json({message:"user already exist"})
+   await session.withTransaction(async ()=>{
 
-    const user = new users({
+     const user = new users({
       name: palacedetail.name,
       email: palacedetail.email,
       password: hashpass,
-      role: "admin",
+      role: "palace",
+      palaceid:_id
     });
 
-    await user.save();
+    await user.save({session});
 
     const response = await palaces.findByIdAndUpdate(_id, {
       approvestatus: "approved",
       activestatus: true,
-    });
+    },
+  {session});
+   })
+
+   
 
     const emailid = await sendmail.mailsend(
       palacedetail.email,
@@ -664,11 +524,18 @@ exports.palaceapprove = async (req, res) => {
       ),
     );
 
+    if(!emailid){
+      return res.status(400).json({message : "email not sended something wrong"})
+    }
+
     return res.status(200).json({ message: "approval updated" });
   } catch (err) {
     console.log(err);
 
     return res.status(500).json({ message: "internal server error" });
+  }
+  finally{
+     await session.endSession();
   }
 };
 
@@ -838,40 +705,38 @@ exports.updateotpverify = async (req, res) => {
 
 
 exports.directpalaceadd = async (req, res) => {
+  const session=await mongoose.startSession();
   try {
-    const {name,email,address,areaid,adminid,description,approvedby} =
+    const {name,email,phone,address,areaid,adminid,description,approvedby} =
       req.body;
-
+ 
 
     if (!(name && email && phone && address && areaid)) {
       return res.status(404).json({ message: "all keys are required" });
     }
-    const existing = await palaces.findOne({ email });
-    if (existing) {
-      return res.status(409).json({ message: "admin already exist" });
+    const existingpalace = await palaces.findOne({ email });
+    if (existingpalace) {
+      return res.status(409).json({ message: "palace already exist" });
     }
 
-    
 
+    const existuser=await users.findOne({email:email})
+      if(existuser){
+        return res.status(409).json({message:"email already exist in user"})
+      }
 
-    const emailid = await sendmail.mailsend(
-      email,
-      "owner approved",
-      HtmlTemplate.adminApprovedTemplate(
-        name,
-        email,
-        password,
-      ),
-    );
+   
+      const data ={name,email,phone,address,areaid,adminid,description,approvedby}
 
-    if (emailid) {
-      const data ={name,email,address,areaid,adminid,description,approvedby}
+      await session.withTransaction(async ()=>{
 
-      const response = await admins.create({
+        const palace=new palaces({
         ...data,
         approvestatus: "approved",
         activestatus: true
       });
+
+      await palace.save({session})
 
        if(req.files){
              const uploaddata = await uploadimage(req.files);
@@ -890,21 +755,37 @@ exports.directpalaceadd = async (req, res) => {
         email: email,
         phone:phone,
         password: hashpass,
-        role: "palaceowner",
+        role: "palace",
+        palaceid:response._id
       });
+      await user.save({session});
 
-      await user.save();
+      })
+      
+
+       const emailid = await sendmail.mailsend(
+      email,
+      "Palace added",
+      HtmlTemplate.adminApprovedTemplate(
+        name,
+        email,
+        password,
+      ),
+    );
+
+       if (!emailid){
+        return res.status(400).json({message : "email not sended something wrong"})
+       }
 
       return res.status(201).json({ message: "palace added successfully" });
-    }
-
-    return res
-      .status(400)
-      .json({ message: "palace not added error occured retry" });
+    
   } catch (err) {
     console.log(err);
 
     return res.status(500).json({ message: "internal server error", err });
+  }
+  finally{
+     await session.endSession();
   }
 };
 

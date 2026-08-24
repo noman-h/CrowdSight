@@ -14,6 +14,11 @@ const palaceschema=mongoose.Schema({
         required:true,
         trim:true
     },
+    phone:{
+        type:Number,
+        trim:true,
+        required:true
+    },
         areaid:{
            type:mongoose.Schema.Types.ObjectId,
            ref:"areas",

@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import './App.css'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import Header from './Pages/Header'
@@ -15,6 +14,7 @@ import Adminprotect from './Protectedroute/Adminprotect'
 import Adminhome from './AdminPages/Adminhome'
 import PalaceRegisterForm from './Forms/PalaceRegisterForm'
 import UserHome from './UserPages/UserHome'
+import UserViewPalace from './UserPages/UserViewpalace'
 import Palacehome from './PalacePages/Palacehome'
 import Palaceprotect from './Protectedroute/Palaceprotect'
 
@@ -25,6 +25,7 @@ function App() {
    <Header /> 
    <Routes>
     <Route path='/' element={<UserHome/>}/>
+    <Route path='/palaces/:id' element={<UserViewPalace/>}/>
     <Route path='/login' element={<Login/>} />
     <Route path='/signup' element={<Signup/>} />
     <Route path='/helpandsupport' element={<HelpAndSupport/>} />

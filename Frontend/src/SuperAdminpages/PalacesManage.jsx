@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import UseDebouncing from '../Hooks/UseDebouncing';
 import { useNavigate } from 'react-router-dom';
@@ -38,6 +38,20 @@ function PalaceManage() {
   const [limit, setLimit] = useState(6);
   const [totalPages, setTotalPages] = useState(1);
   const [totalPalaces, setTotalPalaces] = useState(0);
+
+  // Only palace-list requests affect the inline results loader.
+  const pendingPalaceRequests = useRef(0);
+  const [isPalacesLoading, setIsPalacesLoading] = useState(false);
+
+  const startPalacesLoading = () => {
+    pendingPalaceRequests.current += 1;
+    setIsPalacesLoading(true);
+  };
+
+  const stopPalacesLoading = () => {
+    pendingPalaceRequests.current = Math.max(0, pendingPalaceRequests.current - 1);
+    if (pendingPalaceRequests.current === 0) setIsPalacesLoading(false);
+  };
 
   const token = localStorage.getItem('token');
 
@@ -128,6 +142,7 @@ function PalaceManage() {
 
   // --- API OPERATIONS ---
   async function fetchpalaces() {
+    startPalacesLoading();
     try {
       const result = await axios.get(
         `${import.meta.env.VITE_API_URL}palace/getallpalaces?search=${search}&activestatus=${status === 'active' ? true : status === 'inactive' ? false : ''}&approvestatus=${status}&statesort=${stateFilter}&citysort=${cityFilter}&areasort=${areaFilter}&sort=${sortBy}&page=${currentPage}&limit=${limit}`,
@@ -144,6 +159,8 @@ function PalaceManage() {
       setTotalPages(Math.ceil(count / limit) || 1);
     } catch (err) {
       handleApiError(err, "Failed to load palaces");
+    } finally {
+      stopPalacesLoading();
     }
   }
 
@@ -157,7 +174,7 @@ function PalaceManage() {
 
       if (result.status === 200) {
         toast.success("Palace deactivated successfully");
-        fetchpalaces();
+        await fetchpalaces();
       }
     } catch (err) {
       handleApiError(err, "Failed to deactivate palace");
@@ -174,7 +191,7 @@ function PalaceManage() {
 
       if (result.status === 200) {
         toast.success("Palace activated successfully");
-        fetchpalaces();
+        await fetchpalaces();
       }
     } catch (err) {
       handleApiError(err, "Failed to activate palace");
@@ -192,7 +209,7 @@ function PalaceManage() {
 
       if (result.status === 200) {
         toast.success("Palace approved successfully");
-        fetchpalaces();
+        await fetchpalaces();
       }
     } catch (err) {
       handleApiError(err, "Failed to approve palace");
@@ -219,7 +236,7 @@ function PalaceManage() {
       if (result.status === 200) {
         toast.success("Palace request rejected successfully");
         setRejectModal({ show: false, id: null, reason: "" });
-        fetchpalaces();
+        await fetchpalaces();
       }
     } catch (err) {
       handleApiError(err, "Failed to reject palace");
@@ -249,7 +266,7 @@ function PalaceManage() {
 
       if (result.status === 200) {
         toast.success("Palace deleted permanently");
-        fetchpalaces();
+        await fetchpalaces();
       }
     } catch (err) {
       handleApiError(err, "Failed to delete palace");
@@ -294,8 +311,7 @@ function PalaceManage() {
       if (res.status === 200) {
         toast.success("Image deleted successfully");
         // Refresh single palace view state and table list
-        handleview(palaceId);
-        fetchpalaces();
+        await Promise.all([handleview(palaceId), fetchpalaces()]);
       }
     } catch (err) {
       handleApiError(err, "Failed to delete image");
@@ -341,7 +357,6 @@ function PalaceManage() {
           },
         }}
       />
-
     <div className="w-full rounded-2xl sm:rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-4 md:p-7 shadow-sm backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/70">
 
       {/* Top Controls Toolbar */}
@@ -474,8 +489,15 @@ function PalaceManage() {
       </div>
 
       {/* Palace Cards Grid / List */}
-      <div className="grid gap-3.5">
-        {palacedata.length === 0 ? (
+      <div className="grid gap-3.5" aria-busy={isPalacesLoading}>
+        {isPalacesLoading ? (
+          <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-blue-300/80 py-12 text-center dark:border-blue-900/70" role="status" aria-live="polite">
+            <span className="h-8 w-8 animate-spin rounded-full border-3 border-blue-200 border-t-blue-600 dark:border-slate-700 dark:border-t-blue-400" aria-hidden="true" />
+            <p className="mt-3 text-sm font-medium text-slate-500 dark:text-slate-400">
+              Loading palace records...
+            </p>
+          </div>
+        ) : palacedata.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300/80 py-12 text-center dark:border-slate-800">
             <div className="rounded-full bg-slate-100 p-3 dark:bg-slate-800/50">
               <span className="text-xl">🏛️</span>

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import UseDebouncing from '../Hooks/UseDebouncing';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
@@ -48,6 +48,20 @@ function AdminManage() {
   const [limit, setLimit] = useState(6);
   const [totalPages, setTotalPages] = useState(1);
   const [totalAdmins, setTotalAdmins] = useState(0);
+
+  // Keep the loader accurate when multiple admin-list requests overlap.
+  const pendingAdminRequests = useRef(0);
+  const [isAdminsLoading, setIsAdminsLoading] = useState(false);
+
+  const startAdminsLoading = () => {
+    pendingAdminRequests.current += 1;
+    setIsAdminsLoading(true);
+  };
+
+  const stopAdminsLoading = () => {
+    pendingAdminRequests.current = Math.max(0, pendingAdminRequests.current - 1);
+    if (pendingAdminRequests.current === 0) setIsAdminsLoading(false);
+  };
 
   const token = localStorage.getItem('token');
 
@@ -120,6 +134,7 @@ function AdminManage() {
 
   // --- API OPERATIONS ---
   async function fetchadmins() {
+    startAdminsLoading();
     try {
       const result = await axios.get(
         `${import.meta.env.VITE_API_URL}admin/getalladmins?search=${search}&activestatus=${status}&statesort=${stateFilter}&citysort=${cityFilter}&areasort=${areaFilter}&sort=${sortBy}&page=${currentPage}&limit=${limit}`,
@@ -137,6 +152,8 @@ function AdminManage() {
     } catch (err) {
       handleAuthError(err);
       console.log(err);
+    } finally {
+      stopAdminsLoading();
     }
   }
 
@@ -427,8 +444,15 @@ function AdminManage() {
       </div>
 
       {/* Admin Cards Grid / List */}
-      <div className="grid gap-3.5">
-        {admindata.length === 0 ? (
+      <div className="grid gap-3.5" aria-busy={isAdminsLoading}>
+        {isAdminsLoading ? (
+          <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-blue-300/80 py-12 text-center dark:border-blue-900/70" role="status" aria-live="polite">
+            <span className="h-8 w-8 animate-spin rounded-full border-3 border-blue-200 border-t-blue-600 dark:border-slate-700 dark:border-t-blue-400" aria-hidden="true" />
+            <p className="mt-3 text-sm font-medium text-slate-500 dark:text-slate-400">
+              Loading admin records...
+            </p>
+          </div>
+        ) : admindata.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300/80 py-12 text-center dark:border-slate-800">
             <div className="rounded-full bg-slate-100 p-3 dark:bg-slate-800/50">
               <span className="text-xl">👤</span>

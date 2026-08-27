@@ -712,10 +712,10 @@ setImagePreviews(existingImages);
         "Email is required.";
     }
 
-    if (!formData.phone.trim()) {
+    if (!formData.phone) {
       newErrors.phone =
         "Phone number is required.";
-    } else if (!/^[0-9]{10}$/.test(formData.phone.trim())) {
+    } else if (!/^[0-9]{10}$/.test(formData.phone)) {
       newErrors.phone =
         "Enter a valid 10-digit phone number.";
     }
@@ -838,7 +838,7 @@ setImagePreviews(existingImages);
 
       submitData.append(
         "phone",
-        formData.phone.trim()
+        formData.phone
       );
 
       submitData.append(

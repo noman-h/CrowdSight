@@ -185,18 +185,20 @@ exports.forgetotpverify=async(req,res)=>{
         }
 
        if(Number(otp) === user.otp && moment().isSameOrBefore(user.otpexpire)){
-         await user.findOneAndUpdate({ email }, { otp: null, otpexpire: null });
+         await users.findOneAndUpdate({ email }, { otp: null, otpexpire: null });
          return res.status(200).json({ message: "Code verify" });
        }
        else if (user.otp !== Number(otp)) {
         return res.status(401).json({ message: "wrong code" });
       }
        else {
-        await user.findOneAndUpdate({ email }, { otp: null, otpexpire: null });
+        await users.findOneAndUpdate({ email }, { otp: null, otpexpire: null });
         return res.status(403).json({ message: "Code expire" });
       }
     }
     catch(err){
+      console.log(err);
+      
     return res.status(500).json({message:"internal server error"})
     } 
 }

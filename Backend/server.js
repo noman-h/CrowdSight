@@ -31,6 +31,9 @@ app.use('/admin',adminroute)
 const palaceroute=require('./Route/PalaceRoute')
 app.use('/palace',palaceroute)
 
+const qrroute=require('./Route/Qrroute')
+app.use('/palaceqr',qrroute)
+
 const port = process.env.PORT || 8080;
 app.listen(port, () => {
   console.log("running server", port);

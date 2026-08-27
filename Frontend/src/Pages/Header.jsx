@@ -1,18 +1,22 @@
-import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { Menu, X, LogOut, KeyRound, LogIn, UserPlus, Sun, Moon, HelpCircle } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Link, useLocation } from 'react-router-dom'
+import { Menu, X, LogOut, KeyRound, LogIn, UserPlus, Sun, Moon, HelpCircle, QrCode } from 'lucide-react'
 import UseTheme from '../Hooks/UseTheme'
 import headerlogo from '../assets/headerlogo.svg'
+import QrScannerModal from '../Components/QrScannerModal'
 
 function Header() {
+  const { pathname } = useLocation()
   const token = localStorage.getItem('token')
   const email = localStorage.getItem('email')
+  const role = localStorage.getItem('role')
 
   const { theme, toggletheme } = UseTheme()
   const userInitial = email ? email.charAt(0).toUpperCase() : 'U'
 
   const [menuOpen, setMenuOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
+  const [scannerOpen, setScannerOpen] = useState(false)
 
   // Close profile dropdown when clicking outside
   useEffect(() => {
@@ -32,7 +36,7 @@ function Header() {
   }
 
   return (
-    <header className="w-full sticky top-0 z-50
+    <header data-route={pathname} className="w-full sticky top-0 z-50
                        bg-white dark:bg-gray-900
                        border-b border-gray-200 dark:border-gray-800
                        shadow-sm transition-colors duration-200">
@@ -72,6 +76,19 @@ function Header() {
                 <Moon size={20} className="text-gray-600 dark:text-gray-300" />
               )}
             </button>
+
+            {token && role === 'user' && (
+              <button
+                type="button"
+                onClick={() => setScannerOpen(true)}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-blue-600 px-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-offset-gray-900 sm:px-3.5"
+                aria-label="Scan palace QR code"
+                title="Scan palace QR code"
+              >
+                <QrCode size={18} aria-hidden="true" />
+                <span className="hidden sm:inline">Scan QR</span>
+              </button>
+            )}
 
             {/* ── DESKTOP: NOT LOGGED IN ── */}
             {!token && (
@@ -258,6 +275,8 @@ function Header() {
           </div>
         </div>
       )}
+
+      {scannerOpen && <QrScannerModal onClose={() => setScannerOpen(false)} />}
     </header>
   )
 }

@@ -24,7 +24,7 @@ const userschema=mongoose.Schema({
     },
     role:{
         type:String,
-        enum:["superadmin","admin","palaceowner","user"],
+        enum:["superadmin","admin","palace","user"],
         default:"user"
     },
     adminid:{

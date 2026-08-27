@@ -6,6 +6,7 @@ const palaceimages=require('../Model/PalaceImagesModel')
 const { v4: uuidv4 } = require("uuid");
 const bcrypt=require('bcrypt')
 const users=require('../Model/UserModel')
+const qrs=require('../Model/QrModel')
 
 const { uploadimage } = require('../Utils/FileUpload');
 const moment = require("moment");
@@ -169,6 +170,8 @@ return res.status(201).json({ message: "palace updated successfully" });
 
    
  exports.palacereadall = async (req, res) => {
+  console.log(req.query);
+  
    try {
      const { 
        search, 
@@ -308,7 +311,7 @@ return res.status(201).json({ message: "palace updated successfully" });
  
      return res.status(200).json({ response, totalcount });
    } catch (err) {
-     console.error("Error in adminreadall:", err);
+     console.error("Error in palacereadall:", err);
      return res.status(500).json({ message: "Internal server error" });
    }
  };
@@ -728,6 +731,9 @@ exports.directpalaceadd = async (req, res) => {
    
       const data ={name,email,phone,address,areaid,adminid,description,approvedby}
 
+      const uniquecode=uuidv4()
+      const qrcode=uniquecode+name;
+      
       await session.withTransaction(async ()=>{
 
         const palace=new palaces({
@@ -742,7 +748,7 @@ exports.directpalaceadd = async (req, res) => {
              const uploaddata = await uploadimage(req.files);
              
              for(const i of uploaddata){
-                 await palaceimages.create({image:i.url,palaceid:response._id})
+                 await palaceimages.create({image:i.url,palaceid:palace._id})
              }
         }
 
@@ -756,11 +762,18 @@ exports.directpalaceadd = async (req, res) => {
         phone:phone,
         password: hashpass,
         role: "palace",
-        palaceid:response._id
+        palaceid:palace._id
       });
       await user.save({session});
 
+      const qr=await new qrs({
+          code:qrcode,
+          palaceid:palace._id
       })
+      await qr.save({session})
+
+  })
+
       
 
        const emailid = await sendmail.mailsend(

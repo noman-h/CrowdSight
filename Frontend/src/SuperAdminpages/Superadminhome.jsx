@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
+import { Menu } from 'lucide-react'
 import SuperadminDashboard from './SuperadminDashboard'
 import AdminManage from './AdminManage'
 import PalacesManage from './PalacesManage'
@@ -10,6 +11,7 @@ import { Toaster } from 'react-hot-toast'
 
 function Superadminhome() {
   const [activewindow, setactivewindow] = useState('dashboard')
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   // Map window keys to clean display titles
   const titles = {
@@ -22,12 +24,14 @@ function Superadminhome() {
   }
 
   return (
-    <div className="flex h-[calc(100dvh-4rem)] min-h-0 w-full flex-col overflow-hidden bg-gray-50 transition-colors duration-200 dark:bg-gray-950 md:flex-row">
+    <div className="relative flex h-[calc(100dvh-4rem)] min-h-0 w-full overflow-hidden bg-gray-50 transition-colors duration-200 dark:bg-gray-950 md:flex-row">
       
       {/* ── SIDEBAR ── */}
       <SuperadminSidebar
         activewindow={activewindow}
         setactivewindow={setactivewindow}
+        isMobileOpen={isSidebarOpen}
+        onMobileClose={() => setIsSidebarOpen(false)}
       />
 
       {/* ── MAIN CONTENT AREA ── */}
@@ -35,9 +39,22 @@ function Superadminhome() {
         
         {/* Top Header Bar */}
         <header className="flex min-h-14 shrink-0 items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-2 transition-colors duration-200 dark:border-gray-800 dark:bg-gray-900 sm:min-h-16 sm:px-6 lg:px-8">
-          <h1 className="min-w-0 truncate text-base font-bold capitalize text-gray-900 dark:text-white sm:text-xl">
-            {titles[activewindow] || 'Dashboard'}
-          </h1>
+          <div className="flex min-w-0 items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsSidebarOpen(true)}
+              className="shrink-0 rounded-lg p-2 text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white md:hidden"
+              aria-label="Open sidebar"
+              aria-controls="superadmin-sidebar"
+              aria-expanded={isSidebarOpen}
+            >
+              <Menu size={21} />
+            </button>
+
+            <h1 className="min-w-0 truncate text-base font-bold capitalize text-gray-900 dark:text-white sm:text-xl">
+              {titles[activewindow] || 'Dashboard'}
+            </h1>
+          </div>
           <div className="flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
             <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse"></span>
             <span className="hidden sm:inline">Superadmin Panel</span>

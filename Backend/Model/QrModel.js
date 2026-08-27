@@ -7,6 +7,7 @@ const qrschema=mongoose.Schema({
     },
     palaceid:{
         type:mongoose.Schema.Types.ObjectId,
+        ref:"palaces",
         required:true
     },
     activestatus:{

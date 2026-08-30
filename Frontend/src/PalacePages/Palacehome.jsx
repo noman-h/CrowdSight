@@ -64,7 +64,7 @@ function Palacehome() {
        <Toaster position="bottom-right" reverseOrder={false} />
 
           <div className="mx-auto w-full min-w-0 max-w-7xl">
-            {activewindow === 'dashboard' && <PalaceDashboard />}
+            {activewindow === 'dashboard' && <PalaceDashboard onNavigate={setactivewindow} />}
             {activewindow === 'reviews' && <PalaceReviews />}
             {activewindow === 'checkins' && <Palcechecikns />}
             {activewindow === 'qr' && <Palaceqr />}

@@ -1,16 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { CameraOff, CircleCheck, QrCode, X } from 'lucide-react'
+import axios from 'axios'
+import { CameraOff, CircleCheck, LoaderCircle, QrCode, X } from 'lucide-react'
 import jsQR from 'jsqr'
+import ReviewModal from './ReviewModal'
+
+const API_BASE_URL = import.meta.env.VITE_API_URL
 
 function QrScannerModal({ onClose }) {
   const [scannerSession, setScannerSession] = useState(0)
   const [status, setStatus] = useState('starting')
   const [message, setMessage] = useState('Starting camera...')
   const [scannedValue, setScannedValue] = useState('')
+  const [resultTitle, setResultTitle] = useState('QR scanned')
+  const [reviewContext, setReviewContext] = useState(null)
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const cameraStreamRef = useRef(null)
   const scanFrameRef = useRef(null)
+  const scanHandledRef = useRef(false)
+  const apiRequestRef = useRef(null)
 
   const stopScanner = useCallback(() => {
     if (scanFrameRef.current) {
@@ -26,10 +34,99 @@ function QrScannerModal({ onClose }) {
     if (videoRef.current) videoRef.current.srcObject = null
   }, [])
 
+  const submitScannedQr = useCallback(
+    async (value) => {
+      if (scanHandledRef.current) return
+
+      scanHandledRef.current = true
+      stopScanner()
+      setStatus('processing')
+      setMessage('Verifying QR code and recording your visit...')
+
+      const code = value.trim()
+      const token = localStorage.getItem('token')
+      const role = localStorage.getItem('role')
+
+      if (!code) {
+        setResultTitle('Invalid QR code')
+        setStatus('error')
+        setMessage('This is not a valid palace QR code.')
+        return
+      }
+
+      setScannedValue(code)
+
+      if (!token) {
+        setResultTitle('Login required')
+        setStatus('error')
+        setMessage('Please log in before scanning a palace QR code.')
+        return
+      }
+
+      if (role !== 'user') {
+        setResultTitle('Visitor account required')
+        setStatus('error')
+        setMessage('QR check-in is only available to logged-in visitor accounts.')
+        return
+      }
+
+      const controller = new AbortController()
+      apiRequestRef.current = controller
+
+      try {
+        const response = await axios.post(
+          `${API_BASE_URL}checkin/scan/${encodeURIComponent(code)}`,
+          {},
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            signal: controller.signal,
+          },
+        )
+
+        const action = response?.data?.action
+        setResultTitle(action === 'checkout' ? 'Checked out' : 'Checked in')
+        setStatus('success')
+        setMessage(response?.data?.message || 'QR scan recorded successfully.')
+        if (action === 'checkout' && response?.data?.reviewContext) {
+          setReviewContext(response.data.reviewContext)
+        }
+      } catch (requestError) {
+        if (requestError.code === 'ERR_CANCELED') return
+
+        setResultTitle('Scan failed')
+        setStatus('error')
+        setMessage(
+          requestError?.response?.data?.message ||
+            'Unable to verify this QR code. Please try again.',
+        )
+      } finally {
+        apiRequestRef.current = null
+      }
+    },
+    [stopScanner],
+  )
+
   useEffect(() => {
     let cancelled = false
 
     Promise.resolve().then(async () => {
+      const token = localStorage.getItem('token')
+      const role = localStorage.getItem('role')
+
+      if (!token) {
+        setResultTitle('Login required')
+        setStatus('error')
+        setMessage('Please log in before scanning a palace QR code.')
+        return
+      }
+
+      if (role !== 'user') {
+        setResultTitle('Visitor account required')
+        setStatus('error')
+        setMessage('QR check-in is only available to logged-in visitor accounts.')
+        return
+      }
+
       if (!navigator.mediaDevices?.getUserMedia) {
         setStatus('error')
         setMessage('Camera access is unavailable. Open this site over HTTPS or use localhost.')
@@ -101,10 +198,7 @@ function QrScannerModal({ onClose }) {
                 })
 
                 if (detectedCode?.data) {
-                  setScannedValue(detectedCode.data)
-                  setStatus('success')
-                  setMessage('QR code scanned successfully.')
-                  stopScanner()
+                  submitScannedQr(detectedCode.data)
                   return
                 }
               }
@@ -125,6 +219,7 @@ function QrScannerModal({ onClose }) {
               ? 'No camera was found on this device.'
               : 'Unable to start the camera. Please try again.'
 
+        setResultTitle('Camera unavailable')
         setStatus('error')
         setMessage(cameraMessage)
         stopScanner()
@@ -135,17 +230,22 @@ function QrScannerModal({ onClose }) {
       cancelled = true
       stopScanner()
     }
-  }, [scannerSession, stopScanner])
+  }, [scannerSession, stopScanner, submitScannedQr])
 
   const retryScanner = () => {
+    apiRequestRef.current?.abort()
     stopScanner()
+    scanHandledRef.current = false
     setScannedValue('')
+    setReviewContext(null)
+    setResultTitle('QR scanned')
     setMessage('Starting camera...')
     setStatus('starting')
     setScannerSession((session) => session + 1)
   }
 
   const closeScanner = () => {
+    apiRequestRef.current?.abort()
     stopScanner()
     onClose()
   }
@@ -199,10 +299,21 @@ function QrScannerModal({ onClose }) {
             </div>
           )}
 
+          {status === 'processing' && (
+            <div className="rounded-2xl bg-blue-50 p-8 text-center dark:bg-blue-950/40">
+              <LoaderCircle
+                size={48}
+                className="mx-auto animate-spin text-blue-600 dark:text-blue-400"
+                aria-hidden="true"
+              />
+              <h3 className="mt-3 font-bold text-blue-900 dark:text-blue-200">Processing scan</h3>
+            </div>
+          )}
+
           {status === 'success' && (
             <div className="rounded-2xl bg-emerald-50 p-6 text-center dark:bg-emerald-950/40">
               <CircleCheck size={48} className="mx-auto text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
-              <h3 className="mt-3 font-bold text-emerald-900 dark:text-emerald-200">QR scanned</h3>
+              <h3 className="mt-3 font-bold text-emerald-900 dark:text-emerald-200">{resultTitle}</h3>
               <p className="mt-3 max-h-24 overflow-y-auto break-all rounded-xl bg-white/70 p-3 text-left text-xs text-emerald-800 dark:bg-slate-900/60 dark:text-emerald-300">
                 {scannedValue}
               </p>
@@ -212,7 +323,7 @@ function QrScannerModal({ onClose }) {
           {status === 'error' && (
             <div className="rounded-2xl bg-rose-50 p-6 text-center dark:bg-rose-950/40">
               <CameraOff size={44} className="mx-auto text-rose-600 dark:text-rose-400" aria-hidden="true" />
-              <h3 className="mt-3 font-bold text-rose-900 dark:text-rose-200">Camera unavailable</h3>
+              <h3 className="mt-3 font-bold text-rose-900 dark:text-rose-200">{resultTitle}</h3>
             </div>
           )}
 
@@ -245,6 +356,13 @@ function QrScannerModal({ onClose }) {
           )}
         </div>
       </div>
+      {reviewContext && (
+        <ReviewModal
+          checkin={reviewContext}
+          onClose={closeScanner}
+          onSaved={closeScanner}
+        />
+      )}
     </div>
   )
 }

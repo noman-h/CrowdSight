@@ -60,7 +60,7 @@ function Adminhome() {
        <Toaster position="bottom-right" reverseOrder={false} />
 
           <div className="mx-auto w-full min-w-0 max-w-7xl">
-            {activewindow === 'dashboard' && <AdminDashboard />}
+            {activewindow === 'dashboard' && <AdminDashboard onNavigate={setactivewindow} />}
             {activewindow === 'palaces' && <AdminpalaceManage />}
           </div>
         </main>

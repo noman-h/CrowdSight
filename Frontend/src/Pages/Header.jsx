@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Menu, X, LogOut, KeyRound, LogIn, UserPlus, Sun, Moon, HelpCircle, QrCode } from 'lucide-react'
+import { Menu, X, LogOut, KeyRound, LogIn, UserPlus, Sun, Moon, HelpCircle, QrCode, History, Info, Mail } from 'lucide-react'
 import UseTheme from '../Hooks/UseTheme'
 import headerlogo from '../assets/headerlogo.svg'
 import QrScannerModal from '../Components/QrScannerModal'
@@ -94,6 +94,20 @@ function Header() {
             {!token && (
               <div className="hidden md:flex items-center gap-2">
                 <Link
+                  to="/aboutus"
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition-all duration-200 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                >
+                  <Info size={16} />
+                  About
+                </Link>
+                <Link
+                  to="/contactus"
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 transition-all duration-200 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                >
+                  <Mail size={16} />
+                  Contact
+                </Link>
+                <Link
                   to="/helpandsupport"
                   className="flex items-center gap-1.5 px-3 py-2
                              text-sm font-medium rounded-lg
@@ -179,6 +193,32 @@ function Header() {
 
                   {/* Actions */}
                   <div className="p-2 space-y-1">
+                    {role === 'user' && (
+                      <Link
+                        to="/my-checkins"
+                        onClick={() => setProfileOpen(false)}
+                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700/60"
+                      >
+                        <History size={16} className="text-gray-500 dark:text-gray-400" />
+                        My Check-ins
+                      </Link>
+                    )}
+                    <Link
+                      to="/aboutus"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700/60"
+                    >
+                      <Info size={16} className="text-gray-500 dark:text-gray-400" />
+                      About Us
+                    </Link>
+                    <Link
+                      to="/contactus"
+                      onClick={() => setProfileOpen(false)}
+                      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700/60"
+                    >
+                      <Mail size={16} className="text-gray-500 dark:text-gray-400" />
+                      Contact Us
+                    </Link>
                     <Link
                       to="/helpandsupport"
                       onClick={() => setProfileOpen(false)}
@@ -234,6 +274,22 @@ function Header() {
           <div className="px-4 pb-4 pt-2 space-y-2
                           bg-white dark:bg-gray-900
                           border-t border-gray-100 dark:border-gray-800">
+            <Link
+              to="/aboutus"
+              onClick={() => setMenuOpen(false)}
+              className="flex w-full items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
+            >
+              <Info size={16} />
+              About Us
+            </Link>
+            <Link
+              to="/contactus"
+              onClick={() => setMenuOpen(false)}
+              className="flex w-full items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
+            >
+              <Mail size={16} />
+              Contact Us
+            </Link>
             <Link
               to="/helpandsupport"
               onClick={() => setMenuOpen(false)}

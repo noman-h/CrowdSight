@@ -38,7 +38,7 @@ function Login() {
       if(role==="superadmin")   navigate('/superadmin')
       else if(role==="admin")   navigate('/admin')
       else if(role==="palace")   navigate('/palace')
-      else if(role==="user")   navigate(-1)
+      else if(role==="user")   navigate('/')
     
     }
        if (!email || !password) {

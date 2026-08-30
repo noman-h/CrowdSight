@@ -68,7 +68,7 @@ function Superadminhome() {
        <Toaster position="bottom-right" reverseOrder={false} />
 
           <div className="mx-auto w-full min-w-0 max-w-7xl">
-            {activewindow === 'dashboard' && <SuperadminDashboard />}
+            {activewindow === 'dashboard' && <SuperadminDashboard onNavigate={setactivewindow} />}
             {activewindow === 'admins' && <AdminManage />}
             {activewindow === 'palaces' && <PalacesManage />}
             {activewindow === 'states' && <States />}

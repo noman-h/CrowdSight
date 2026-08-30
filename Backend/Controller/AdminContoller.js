@@ -376,17 +376,50 @@ exports.admincheckone = async (req, res) => {
 };
 
 exports.admindelete = async (req, res) => {
+  let session;
+
   try {
     const id = req.params.id;
 
-    if (!id) {
-      return res.status(404).json({ message: "id not found" });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "invalid admin id" });
     }
 
-    const response = await admins.findByIdAndDelete(id);
-    return res.status(200).json({ message: "deleted successfully" });
+    session = await mongoose.startSession();
+    let admin = null;
+    let deletedUsers = 0;
+
+    await session.withTransaction(async () => {
+      admin = await admins.findById(id).session(session);
+      if (!admin) return;
+
+      const userDeleteResult = await users.deleteMany(
+        {
+          $or: [
+            { adminid: admin._id },
+            { email: admin.email, role: "admin" },
+          ],
+        },
+        { session },
+      );
+
+      deletedUsers = userDeleteResult.deletedCount;
+      await admins.deleteOne({ _id: admin._id }, { session });
+    });
+
+    if (!admin) {
+      return res.status(404).json({ message: "admin not found" });
+    }
+
+    return res.status(200).json({
+      message: "admin and linked user deleted successfully",
+      deletedUsers,
+    });
   } catch (err) {
+    console.error("Error deleting admin and linked user:", err);
     return res.status(500).json({ message: "internal server error" });
+  } finally {
+    if (session) await session.endSession();
   }
 };
 

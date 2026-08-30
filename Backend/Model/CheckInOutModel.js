@@ -27,7 +27,7 @@ const checkinoutschema=mongoose.Schema({
     status:{
         type:String,
         enum:["checkedin","checkedout"],
-        default:"checkdin"
+        default:"checkedin"
     }
 },
 {

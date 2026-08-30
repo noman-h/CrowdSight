@@ -34,6 +34,6 @@ router.patch('/palacenotpsend',PalaceController.updateotpsend)
 
 router.patch('/palaceotpverify',PalaceController.updateotpverify)
 
-router.delete('/imagedelete/:id',PalaceController.deleteimage)
+router.delete('/imagedelete/:id',auth,authorize('superadmin','admin'),PalaceController.deleteimage)
 
 module.exports=router

@@ -34,6 +34,12 @@ app.use('/palace',palaceroute)
 const qrroute=require('./Route/Qrroute')
 app.use('/palaceqr',qrroute)
 
+const checkinoutroute=require('./Route/CheckinRoute')
+app.use('/checkin',checkinoutroute)
+
+const reviewroute=require('./Route/ReviewRoute')
+app.use('/review',reviewroute)
+
 const port = process.env.PORT || 8080;
 app.listen(port, () => {
   console.log("running server", port);

@@ -39,11 +39,12 @@ exports.login=async (req,res)=>{
        return res.status(400).json({message:"bad request all field required"})
        }
 
-       const user=await users.findOne({email})
+       const user=await users.findOne({email},{ username: 1, email: 1 ,theme:1,palaceid:1,adminid:1,role:1,password:1})
 
        if(!user){
         return res.status(404).json({message:"user not found"})
        }
+       
 
        const match=bcrypt.compareSync(password,user.password)
 
@@ -55,6 +56,8 @@ exports.login=async (req,res)=>{
        return res.status(200).json({message: "login succesfully",user,token})
     }
     catch(err){
+      console.log(err);
+      
        return res.status(500).json({message:'internal server error',err})
     }
 }

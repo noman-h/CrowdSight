@@ -16,7 +16,7 @@ router.post('/directaddadmin',auth,authorize('superadmin'),AdminController.direc
 
 router.get('/getalladmins',auth,authorize('superadmin'),AdminController.adminreadall)
 
-router.get('/getoneadmin/:id',AdminController.adminreadone)
+router.get('/getoneadmin/:id',auth,authorize('superadmin'),AdminController.adminreadone)
 
 router.get('/getuseradmin/:email',AdminController.adminbyuserone)
 

@@ -170,8 +170,6 @@ return res.status(201).json({ message: "palace updated successfully" });
 
    
  exports.palacereadall = async (req, res) => {
-  console.log(req.query);
-  
    try {
      const { 
        search, 
@@ -361,49 +359,6 @@ exports.palacereadone = async (req, res) => {
 };
     
 
-exports.palacereadone = async (req, res) => {
-  try {
-    const id = req.params.id;
-
-    if (!id) {
-      return res.status(400).json({
-        message: "bad request"
-      });
-    }
-
-    const result = await palaces
-      .findOne({ _id: id })
-      .populate({
-        path: "areaid",
-        populate: {
-          path: "cityid",
-          populate: {
-            path: "stateid"
-          }
-        }
-      });
-
-    if (!result) {
-      return res.status(404).json({
-        message: "data not found"
-      });
-    }
-
-    const images=await palaceimages.find({palaceid:result._id})
-
-    const response={...result.toObject(),images}
-
-    return res.status(200).json({response});
-
-  } catch (err) {
-    console.log(err);
-
-    return res.status(500).json({
-      message: "internal server error"
-    });
-  }
-};
-
 exports.palacecheckone = async (req, res) => {
   try {
     const checkid = req.params.id;
@@ -426,21 +381,56 @@ exports.palacecheckone = async (req, res) => {
 
 
 exports.palacedelete = async (req, res) => {
+  let session;
+
   try {
     const id = req.params.id;
 
-    if (!id) {
-      return res.status(404).json({ message: "id not found" });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "invalid palace id" });
     }
 
-    await palaceimages.deleteMany({
-    palaceid: id
-});
+    session = await mongoose.startSession();
+    let palace = null;
+    let deletedUsers = 0;
+    let deletedImages = 0;
 
-    const response = await palaces.findByIdAndDelete(id);
-    return res.status(200).json({ message: "deleted successfully" });
+    await session.withTransaction(async () => {
+      palace = await palaces.findById(id).session(session);
+      if (!palace) return;
+
+      const [userDeleteResult, imageDeleteResult] = await Promise.all([
+        users.deleteMany(
+          {
+            $or: [
+              { palaceid: palace._id },
+              { email: palace.email, role: "palace" },
+            ],
+          },
+          { session },
+        ),
+        palaceimages.deleteMany({ palaceid: palace._id }, { session }),
+      ]);
+
+      deletedUsers = userDeleteResult.deletedCount;
+      deletedImages = imageDeleteResult.deletedCount;
+      await palaces.deleteOne({ _id: palace._id }, { session });
+    });
+
+    if (!palace) {
+      return res.status(404).json({ message: "palace not found" });
+    }
+
+    return res.status(200).json({
+      message: "palace, linked user, and images deleted successfully",
+      deletedUsers,
+      deletedImages,
+    });
   } catch (err) {
+    console.error("Error deleting palace and related records:", err);
     return res.status(500).json({ message: "internal server error" });
+  } finally {
+    if (session) await session.endSession();
   }
 };
 

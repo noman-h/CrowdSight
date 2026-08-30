@@ -3,14 +3,17 @@ const router=express.Router()
 
 const qrcontroller=require('../Controller/QrController')
 
-router.get('/getqr/:id',qrcontroller.getqr)
+const auth=require('../Middleware/Auth')
+const authorize=require('../Middleware/Authorize')
 
-router.post('/generateqr/:id',qrcontroller.genratenewqr)
+router.get('/getqr/:id',auth,authorize('palace'),qrcontroller.getqr)
 
-router.patch('/activateqr/:id',qrcontroller.activate)
+router.post('/generateqr/:id',auth,authorize('palace'),qrcontroller.genratenewqr)
 
-router.patch('/deactivateqr/:id',qrcontroller.deactivate)
+router.patch('/activateqr/:id',auth,authorize('palace'),qrcontroller.activate)
 
-router.delete('/deleteqr/:id',qrcontroller.deactivate)
+router.patch('/deactivateqr/:id',auth,authorize('palace'),qrcontroller.deactivate)
+
+router.delete('/deleteqr/:id',auth,authorize('palace'),qrcontroller.delete)
 
 module.exports=router

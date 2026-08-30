@@ -17,11 +17,10 @@ exports.getqr=async (req,res)=>{
         return res.status({message : "qr not found" })
       }
 
-      const url=`http://localhost:8080/checkin/scan/${qr.code}`
 
-      const qrimage=await qrcode.toDataURL(url)
+      const qrimage=await qrcode.toDataURL(qr.code)
 
-      res.status(200).json({_id:qr._id,code:qr.code,url,qrimage,activestatus:qr.activestatus})
+      res.status(200).json({_id:qr._id,code:qr.code,qrimage,activestatus:qr.activestatus})
     }
     catch(err){
         console.log(err);

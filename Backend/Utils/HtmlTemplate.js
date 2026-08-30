@@ -638,6 +638,42 @@ Regards,<br>
 `;
 };
 
+exports.palaceUpdateOtpTemplate = (palaceName, otp) => {
+  return exports
+    .adminUpdateOtpTemplate(palaceName, otp)
+    .replaceAll("Admin Details Update Verification", "Palace Details Update Verification")
+    .replaceAll("Verify Admin Details Update", "Verify Palace Details Update")
+    .replaceAll("Admin account details", "Palace account details");
+};
+
+exports.palaceCheckIdTemplate = (palaceName, checkId) => {
+  return exports
+    .adminCheckIdTemplate(palaceName, checkId)
+    .replaceAll("Admin Status Tracking ID", "Palace Status Tracking ID")
+    .replaceAll("Admin registration", "Palace registration")
+    .replaceAll("Admin Name", "Palace Name")
+    .replaceAll("Super Admin", "administrator");
+};
+
+exports.palaceApprovedTemplate = (palaceName, email, password) => {
+  return exports
+    .adminApprovedTemplate(palaceName, email, password)
+    .replaceAll("Admin Registration Approved", "Palace Registration Approved")
+    .replaceAll("Admin registration", "Palace registration")
+    .replaceAll("Admin account", "Palace account")
+    .replaceAll("Super Admin", "administrator")
+    .replaceAll("https://your-domain.com/admin/login", "https://your-domain.com/login");
+};
+
+exports.palaceRejectedTemplate = (palaceName, reason) => {
+  return exports
+    .adminRejectedTemplate(palaceName, reason)
+    .replaceAll("Admin Registration Rejected", "Palace Registration Rejected")
+    .replaceAll("Admin registration", "Palace registration")
+    .replaceAll("Admin Name", "Palace Name")
+    .replaceAll("Super Admin", "administrator");
+};
+
 
 exports.accountCreatedTemplate = (username) => {
   return `

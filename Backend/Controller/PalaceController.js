@@ -79,7 +79,7 @@ const areaadmin = areaadmins[randomIndex];
             const emailid = await sendmail.mailsend(
               email,
               "status checkid",
-              HtmlTemplate.adminCheckIdTemplate(name, checkid),
+              HtmlTemplate.palaceCheckIdTemplate(name, checkid),
             );
         
             if (emailid) {
@@ -509,8 +509,8 @@ exports.palaceapprove = async (req, res) => {
 
     const emailid = await sendmail.mailsend(
       palacedetail.email,
-      "admin approved",
-      HtmlTemplate.adminApprovedTemplate(
+      "palace approved",
+      HtmlTemplate.palaceApprovedTemplate(
         palacedetail.name,
         palacedetail.email,
         password,
@@ -546,7 +546,7 @@ exports.palacereject = async (req, res) => {
     const emailid = await sendmail.mailsend(
       palacedetail.email,
       "palace rejected",
-      HtmlTemplate.adminRejectedTemplate(palacedetail.name, reason),
+      HtmlTemplate.palaceRejectedTemplate(palacedetail.name, reason),
     );
 
     const response = await palaces.findByIdAndUpdate(_id, {
@@ -642,7 +642,7 @@ exports.updateotpsend = async (req, res) => {
     const mailid = await sendmail.mailsend(
       email,
       "otp for update form",
-      HtmlTemplate.adminUpdateOtpTemplate(palace.name, otp),
+      HtmlTemplate.palaceUpdateOtpTemplate(palace.name, otp),
     );
 
     if (mailid) {
@@ -769,7 +769,7 @@ exports.directpalaceadd = async (req, res) => {
        const emailid = await sendmail.mailsend(
       email,
       "Palace added",
-      HtmlTemplate.adminApprovedTemplate(
+      HtmlTemplate.palaceApprovedTemplate(
         name,
         email,
         password,

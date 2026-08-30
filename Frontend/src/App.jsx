@@ -22,6 +22,7 @@ import UserCheckins from './UserPages/UserCheckins'
 import Footer from './Components/Footer'
 import AboutUs from './Pages/AboutUs'
 import ContactUs from './Pages/ContactUs'
+import NotFound from './Pages/NotFound'
 
 function HomeRoute() {
   const token = localStorage.getItem('token')
@@ -62,6 +63,7 @@ function App() {
     <Route path='/superadmin' element={<Superadminprotect><Superadminhome/></Superadminprotect>} />
     <Route path='/admin' element={<Adminprotect><Adminhome/></Adminprotect>} />
     <Route path='/palace' element={<Palaceprotect> <Palacehome/></Palaceprotect>} />
+    <Route path='*' element={<NotFound />} />
    </Routes>
    </div>
    <Footer />

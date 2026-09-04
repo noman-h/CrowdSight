@@ -324,6 +324,8 @@ function analysePeriod(visits, days, rangeEnd) {
 
 exports.getCrowdAnalytics = async (req, res) => {
   try {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+
     const palace = await palaces.findOne({
       _id: req.params.palaceid,
       activestatus: true,
@@ -334,9 +336,11 @@ exports.getCrowdAnalytics = async (req, res) => {
       return res.status(404).json({ message: 'Palace not found or unavailable.' })
     }
 
+    const requestedDays = Number.parseInt(req.query.days, 10)
+    const periodDays = [7, 30, 180].includes(requestedDays) ? requestedDays : 7
     const rangeEnd = new Date()
     const rangeStart = new Date(rangeEnd)
-    rangeStart.setDate(rangeEnd.getDate() - 6)
+    rangeStart.setDate(rangeEnd.getDate() - (periodDays - 1))
     rangeStart.setHours(0, 0, 0, 0)
     const yearlyRangeStart = new Date(rangeEnd)
     yearlyRangeStart.setDate(rangeEnd.getDate() - 364)
@@ -358,12 +362,14 @@ exports.getCrowdAnalytics = async (req, res) => {
       }).select('checkintime checkouttime status').lean(),
     ])
 
-    const daily = Array.from({ length: 7 }, (_, index) => {
+    const daily = Array.from({ length: periodDays }, (_, index) => {
       const date = new Date(rangeStart)
       date.setDate(rangeStart.getDate() + index)
       return {
         key: toDateKey(date),
-        label: date.toLocaleDateString('en-US', { weekday: 'short' }),
+        label: periodDays === 7
+          ? date.toLocaleDateString('en-US', { weekday: 'short' })
+          : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         checkins: 0,
       }
     })
@@ -377,25 +383,34 @@ exports.getCrowdAnalytics = async (req, res) => {
 
     const weeklyAnalysis = analysePeriod(visits, 7, rangeEnd)
     const monthlyAnalysis = analysePeriod(visits, 30, rangeEnd)
+    const sixMonthAnalysis = analysePeriod(visits, 180, rangeEnd)
     const yearlyAnalysis = analysePeriod(visits, 365, rangeEnd)
-    const totalCheckins = weeklyAnalysis.totalCheckins
+    const selectedAnalysis = periodDays === 30
+      ? monthlyAnalysis
+      : periodDays === 180
+        ? sixMonthAnalysis
+        : weeklyAnalysis
+    const totalCheckins = selectedAnalysis.totalCheckins
 
     return res.status(200).json({
       currentCrowd,
       totalCheckins,
-      averageDailyCheckins: Number((totalCheckins / 7).toFixed(1)),
+      averageDailyCheckins: Number((totalCheckins / periodDays).toFixed(1)),
       daily,
-      hourly: weeklyAnalysis.hourly,
-      bestTime: weeklyAnalysis.bestTime,
-      peakTime: weeklyAnalysis.peakTime,
+      hourly: selectedAnalysis.hourly,
+      bestTime: selectedAnalysis.bestTime,
+      peakTime: selectedAnalysis.peakTime,
+      periodDays,
       bestTimes: {
         weekly: weeklyAnalysis.bestTime,
         monthly: monthlyAnalysis.bestTime,
+        sixMonths: sixMonthAnalysis.bestTime,
         yearly: yearlyAnalysis.bestTime,
       },
       analysisTotals: {
         weekly: weeklyAnalysis.totalCheckins,
         monthly: monthlyAnalysis.totalCheckins,
+        sixMonths: sixMonthAnalysis.totalCheckins,
         yearly: yearlyAnalysis.totalCheckins,
       },
       lastUpdated: new Date(),

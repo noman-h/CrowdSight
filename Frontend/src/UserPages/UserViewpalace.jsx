@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   BarChart3,
   Building2,
+  CalendarDays,
   Clock3,
   LogIn,
   Mail,
@@ -12,7 +13,6 @@ import {
   Phone,
   QrCode,
   ShieldCheck,
-  Sparkles,
   Star,
   TrendingDown,
   Users,
@@ -21,6 +21,99 @@ import { useNavigate, useParams } from 'react-router-dom'
 import QrScannerModal from '../Components/QrScannerModal'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL
+const CROWD_PERIODS = [
+  { days: 7, label: 'Last 7 days' },
+  { days: 30, label: '1 month' },
+  { days: 180, label: '6 months' },
+]
+
+function getPeriodLabel(days) {
+  return CROWD_PERIODS.find((period) => period.days === Number(days))?.label || 'Last 7 days'
+}
+
+function formatHour(hour) {
+  const normalizedHour = ((hour % 24) + 24) % 24
+  const displayHour = normalizedHour % 12 || 12
+  return `${displayHour} ${normalizedHour < 12 ? 'AM' : 'PM'}`
+}
+
+function formatLastUpdated(value) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+}
+
+function getBestVisitRecommendation(data) {
+  const bestHour = data?.bestTime || data?.bestTimes?.weekly
+  const completedDays = Array.isArray(data?.daily) ? data.daily.slice(0, -1) : []
+
+  if (!bestHour || completedDays.length === 0) return null
+
+  const weekdayAverages = completedDays.reduce((averages, item) => {
+    const date = item.key ? new Date(`${item.key}T00:00:00`) : null
+    if (!date || Number.isNaN(date.getTime())) return averages
+
+    const weekday = date.getDay()
+    const current = averages.get(weekday) || {
+      day: date.toLocaleDateString('en-US', { weekday: 'long' }),
+      checkins: 0,
+      samples: 0,
+    }
+    current.checkins += Number(item.checkins) || 0
+    current.samples += 1
+    averages.set(weekday, current)
+    return averages
+  }, new Map())
+  const bestDay = [...weekdayAverages.values()]
+    .map((item) => ({ ...item, averageCheckins: item.checkins / item.samples }))
+    .sort((left, right) => left.averageCheckins - right.averageCheckins)[0]
+
+  if (!bestDay) return null
+
+  const startHour = Number(bestHour.hour)
+  const time = Number.isFinite(startHour)
+    ? `${bestHour.label || formatHour(startHour)} - ${formatHour(startHour + 1)}`
+    : bestHour.label
+
+  return {
+    day: bestDay.day,
+    time,
+    averageCrowd: bestHour.averageCrowd,
+  }
+}
+
+function getTrendData(daily, periodDays) {
+  if (!Array.isArray(daily)) return []
+  if (Number(periodDays) !== 180) return daily
+
+  return daily.reduce((weeks, item, index) => {
+    const weekIndex = Math.floor(index / 7)
+    if (!weeks[weekIndex]) {
+      const date = item.key ? new Date(`${item.key}T00:00:00`) : null
+      weeks[weekIndex] = {
+        key: item.key || `week-${weekIndex}`,
+        label: date && !Number.isNaN(date.getTime())
+          ? date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          : `Week ${weekIndex + 1}`,
+        checkins: 0,
+      }
+    }
+    weeks[weekIndex].checkins += Number(item.checkins) || 0
+    return weeks
+  }, [])
+}
+
+function CrowdPeriodSelector({ value, onChange, loading }) {
+  return (
+    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"><CalendarDays size={18} /></div><div><p className="text-sm font-bold text-slate-900 dark:text-white">Crowd history</p><p className="text-xs text-slate-500 dark:text-slate-400">Choose the period used for all insights below.</p></div></div>
+      <label className="sr-only" htmlFor="crowd-period">Crowd history period</label>
+      <select id="crowd-period" value={value} onChange={(event) => onChange(Number(event.target.value))} disabled={loading} className="min-w-36 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:cursor-wait disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+        {CROWD_PERIODS.map((period) => <option key={period.days} value={period.days}>{period.label}</option>)}
+      </select>
+    </div>
+  )
+}
 
 function MiniRatingStars({ rating }) {
   return (
@@ -59,7 +152,7 @@ function ReviewPreview({ data, loading, error }) {
   )
 }
 
-function CrowdPreview({ data, loading, error }) {
+function CrowdPreview({ data, loading, error, periodDays }) {
   if (loading) {
     return <div className="mt-4 h-28 animate-pulse rounded-3xl bg-slate-200 dark:bg-slate-800" aria-label="Loading crowd snapshot" />
   }
@@ -72,11 +165,12 @@ function CrowdPreview({ data, loading, error }) {
     )
   }
 
-  const weeklyBest = data.bestTimes?.weekly || data.bestTime
+  const recommendation = getBestVisitRecommendation(data)
+  const periodLabel = getPeriodLabel(periodDays)
   const recommendations = [
-    ['Best this week', weeklyBest?.label],
-    ['Best this month', data.bestTimes?.monthly?.label],
-    ['Best this year', data.bestTimes?.yearly?.label],
+    ['Best day', recommendation?.day],
+    ['Best time', recommendation?.time],
+    [`${periodLabel} average`, recommendation ? `${recommendation.averageCrowd} people` : null],
   ]
 
   return (
@@ -84,7 +178,7 @@ function CrowdPreview({ data, loading, error }) {
       <div className="grid sm:grid-cols-[minmax(12rem,1.25fr)_minmax(0,2fr)]">
         <div className="flex items-center gap-4 border-b border-white/15 p-4 sm:border-b-0 sm:border-r sm:p-5">
           <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15"><Users size={23} /><span className="absolute -right-0.5 -top-0.5 h-3 w-3 animate-pulse rounded-full border-2 border-blue-700 bg-emerald-400" /></div>
-          <div><p className="text-[11px] font-bold uppercase tracking-wider text-blue-200">Live crowd now</p><div className="mt-1 flex items-baseline gap-2"><p className="text-3xl font-black">{data.currentCrowd}</p><span className="text-xs font-semibold text-blue-100">people inside</span></div></div>
+          <div><p className="text-[11px] font-bold uppercase tracking-wider text-blue-200">Live crowd now</p><div className="mt-1 flex items-baseline gap-2"><p className="text-3xl font-black">{data.currentCrowd}</p><span className="text-xs font-semibold text-blue-100">people inside</span></div>{data.lastUpdated && <p className="mt-1 text-[10px] font-medium text-blue-200">Updated {formatLastUpdated(data.lastUpdated)}</p>}</div>
         </div>
         <div className="grid grid-cols-3 divide-x divide-white/15">
           {recommendations.map(([label, value]) => (
@@ -97,7 +191,7 @@ function CrowdPreview({ data, loading, error }) {
   )
 }
 
-function CrowdInformation({ data, loading, error }) {
+function CrowdInformation({ data, loading, error, periodDays }) {
   if (loading) {
     return (
       <section className="mt-6 animate-pulse rounded-3xl border border-slate-200 bg-white p-5 shadow-lg dark:border-slate-800 dark:bg-slate-900 sm:p-7">
@@ -118,12 +212,19 @@ function CrowdInformation({ data, loading, error }) {
     )
   }
 
-  const dailyMaximum = Math.max(1, ...data.daily.map((item) => item.checkins))
+  const trendData = getTrendData(data.daily, periodDays)
+  const dailyMaximum = Math.max(1, ...trendData.map((item) => item.checkins))
   const hourlyMaximum = Math.max(1, ...data.hourly.map((item) => item.averageCrowd))
   const crowdStatus = data.currentCrowd === 0 ? 'Quiet right now' : data.currentCrowd < 10 ? 'Low crowd' : data.currentCrowd < 25 ? 'Moderate crowd' : 'Busy right now'
-  const weeklyBest = data.bestTimes?.weekly || data.bestTime
-  const monthlyBest = data.bestTimes?.monthly
-  const yearlyBest = data.bestTimes?.yearly
+  const selectedBest = data.bestTime
+  const recommendation = getBestVisitRecommendation(data)
+  const periodLabel = getPeriodLabel(periodDays)
+  const trendInterval = Number(periodDays) === 180 ? 'Weekly visitor check-ins' : 'Daily visitor check-ins'
+  const comparisonTimes = [
+    ['Last 7 days', data.bestTimes?.weekly, data.analysisTotals?.weekly],
+    ['1 month', data.bestTimes?.monthly, data.analysisTotals?.monthly],
+    ['6 months', data.bestTimes?.sixMonths, data.analysisTotals?.sixMonths],
+  ]
 
   return (
     <section id="crowd-information" className="mt-6 scroll-mt-20 space-y-5 rounded-3xl border border-slate-200 bg-white p-5 shadow-xl shadow-slate-900/5 dark:border-slate-800 dark:bg-slate-900 sm:p-7">
@@ -134,39 +235,38 @@ function CrowdInformation({ data, loading, error }) {
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <article className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/30"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"><Users size={18} /></div><p className="mt-3 text-xs font-bold uppercase tracking-wide text-emerald-700/70 dark:text-emerald-300/70">Current crowd</p><p className="mt-1 text-3xl font-black text-emerald-900 dark:text-emerald-100">{data.currentCrowd}</p><p className="mt-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">{crowdStatus}</p></article>
-        <article className="rounded-2xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/30"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"><BarChart3 size={18} /></div><p className="mt-3 text-xs font-bold uppercase tracking-wide text-blue-700/70 dark:text-blue-300/70">Last 7 days</p><p className="mt-1 text-3xl font-black text-blue-900 dark:text-blue-100">{data.totalCheckins}</p><p className="mt-1 text-xs font-semibold text-blue-700 dark:text-blue-300">Total check-ins</p></article>
+        <article className="rounded-2xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/30"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"><BarChart3 size={18} /></div><p className="mt-3 text-xs font-bold uppercase tracking-wide text-blue-700/70 dark:text-blue-300/70">{periodLabel}</p><p className="mt-1 text-3xl font-black text-blue-900 dark:text-blue-100">{data.totalCheckins}</p><p className="mt-1 text-xs font-semibold text-blue-700 dark:text-blue-300">Total check-ins</p></article>
         <article className="rounded-2xl border border-violet-200 bg-violet-50 p-4 dark:border-violet-900 dark:bg-violet-950/30"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-100 text-violet-700 dark:bg-violet-900 dark:text-violet-300"><Activity size={18} /></div><p className="mt-3 text-xs font-bold uppercase tracking-wide text-violet-700/70 dark:text-violet-300/70">Daily average</p><p className="mt-1 text-3xl font-black text-violet-900 dark:text-violet-100">{data.averageDailyCheckins}</p><p className="mt-1 text-xs font-semibold text-violet-700 dark:text-violet-300">Check-ins per day</p></article>
-        <article className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"><Sparkles size={18} /></div><p className="mt-3 text-xs font-bold uppercase tracking-wide text-amber-700/70 dark:text-amber-300/70">Best time this week</p><p className="mt-1 text-2xl font-black text-amber-900 dark:text-amber-100">{weeklyBest?.label || 'Not enough data'}</p><p className="mt-1 text-xs font-semibold text-amber-700 dark:text-amber-300">Lowest recent crowd</p></article>
+        <article className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"><CalendarDays size={18} /></div><p className="mt-3 text-xs font-bold uppercase tracking-wide text-amber-700/70 dark:text-amber-300/70">Best day to visit</p><p className="mt-1 text-2xl font-black text-amber-900 dark:text-amber-100">{recommendation?.day || 'Not enough data'}</p><p className="mt-1 text-xs font-semibold text-amber-700 dark:text-amber-300">{recommendation?.time || 'Waiting for more crowd activity'}</p></article>
       </div>
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <article className="rounded-2xl border border-slate-200 p-4 dark:border-slate-800 sm:p-5">
-          <div><h3 className="font-bold text-slate-900 dark:text-white">Last 7 days</h3><p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Daily visitor check-ins</p></div>
-          <div className="mt-5 flex h-52 items-end gap-2" role="img" aria-label="Check-ins over the last seven days">
-            {data.daily.map((item) => {
+          <div><h3 className="font-bold text-slate-900 dark:text-white">{periodLabel}</h3><p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{trendInterval}</p></div>
+          <div className="mt-5 overflow-x-auto pb-2"><div className={`flex h-52 items-end gap-2 ${Number(periodDays) === 7 ? 'min-w-full' : 'min-w-240'}`} role="img" aria-label={`Check-ins during ${periodLabel.toLowerCase()}`}>
+            {trendData.map((item) => {
               const height = item.checkins ? Math.max(8, (item.checkins / dailyMaximum) * 100) : 2
               return <div key={item.key} className="group flex h-full min-w-0 flex-1 flex-col justify-end"><div className="relative flex flex-1 items-end"><span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold text-white group-hover:block">{item.checkins} check-ins</span><div className="w-full rounded-t-md bg-linear-to-t from-blue-700 to-cyan-400 transition-all group-hover:from-blue-600 group-hover:to-cyan-300" style={{ height: `${height}%` }} /></div><span className="mt-2 text-center text-[10px] font-bold text-slate-400">{item.label}</span></div>
             })}
-          </div>
+          </div></div>
         </article>
 
         <article className="rounded-2xl border border-slate-200 p-4 dark:border-slate-800 sm:p-5">
           <div className="flex items-start justify-between gap-3"><div><h3 className="font-bold text-slate-900 dark:text-white">Best-time analysis</h3><p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Based on average hourly occupancy</p></div><TrendingDown size={20} className="text-emerald-600 dark:text-emerald-400" /></div>
-          {weeklyBest ? <div className="mt-5 rounded-2xl bg-linear-to-br from-emerald-700 to-teal-800 p-5 text-white"><p className="text-xs font-bold uppercase tracking-wide text-emerald-200">Weekly recommendation</p><p className="mt-2 text-3xl font-black">{weeklyBest.label}</p><p className="mt-2 text-sm text-emerald-100">Around {weeklyBest.averageCrowd} people on average during this hour.</p></div> : <div className="mt-5 rounded-2xl bg-slate-50 p-5 text-sm text-slate-500 dark:bg-slate-800 dark:text-slate-400">More check-ins are needed before a reliable recommendation can be made.</div>}
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/30"><p className="text-[11px] font-bold uppercase tracking-wide text-blue-600 dark:text-blue-400">Monthly best time</p><p className="mt-2 text-xl font-black text-blue-900 dark:text-blue-100">{monthlyBest?.label || 'Not enough data'}</p><p className="mt-1 text-xs text-blue-700/70 dark:text-blue-300/70">Based on {data.analysisTotals?.monthly || 0} check-ins in 30 days</p></div>
-            <div className="rounded-xl border border-violet-200 bg-violet-50 p-4 dark:border-violet-900 dark:bg-violet-950/30"><p className="text-[11px] font-bold uppercase tracking-wide text-violet-600 dark:text-violet-400">Yearly best time</p><p className="mt-2 text-xl font-black text-violet-900 dark:text-violet-100">{yearlyBest?.label || 'Not enough data'}</p><p className="mt-1 text-xs text-violet-700/70 dark:text-violet-300/70">Based on {data.analysisTotals?.yearly || 0} check-ins in 12 months</p></div>
+          {recommendation ? <div className="mt-5 rounded-2xl bg-linear-to-br from-emerald-700 to-teal-800 p-5 text-white"><p className="text-xs font-bold uppercase tracking-wide text-emerald-200">Best day and time to visit</p><div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2"><p className="inline-flex items-center gap-2 text-3xl font-black"><CalendarDays size={25} />{recommendation.day}</p><p className="inline-flex items-center gap-2 text-lg font-bold text-emerald-100"><Clock3 size={19} />{recommendation.time}</p></div><p className="mt-3 text-sm text-emerald-100">This recommendation combines the quietest weekday with the lowest-crowd hour during {periodLabel.toLowerCase()}. Around {recommendation.averageCrowd} people are typically present during this hour.</p></div> : <div className="mt-5 rounded-2xl bg-slate-50 p-5 text-sm text-slate-500 dark:bg-slate-800 dark:text-slate-400">More check-ins are needed before a reliable day and time can be recommended.</div>}
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            {comparisonTimes.map(([label, bestTime, total]) => <div key={label} className="rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/30"><p className="text-[11px] font-bold uppercase tracking-wide text-blue-600 dark:text-blue-400">{label} best time</p><p className="mt-2 text-xl font-black text-blue-900 dark:text-blue-100">{bestTime?.label || 'Not enough data'}</p><p className="mt-1 text-xs text-blue-700/70 dark:text-blue-300/70">Based on {total || 0} check-ins</p></div>)}
           </div>
           {data.peakTime && <div className="mt-3 flex items-center justify-between gap-3 rounded-xl border border-slate-200 px-4 py-3 text-sm dark:border-slate-700"><span className="text-slate-500 dark:text-slate-400">Usually busiest</span><span className="font-bold text-slate-900 dark:text-white">{data.peakTime.label}</span></div>}
         </article>
       </div>
 
       <article className="rounded-2xl border border-slate-200 p-4 dark:border-slate-800 sm:p-5">
-        <div className="flex items-start gap-3"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-300"><Clock3 size={18} /></div><div><h3 className="font-bold text-slate-900 dark:text-white">Hourly crowd pattern</h3><p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Average people inside by hour over the last seven days</p></div></div>
-        <div className="mt-5 overflow-x-auto pb-2"><div className="flex h-52 min-w-200 items-end gap-2" role="img" aria-label="Average hourly crowd over the last seven days">
+        <div className="flex items-start gap-3"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-300"><Clock3 size={18} /></div><div><h3 className="font-bold text-slate-900 dark:text-white">Hourly crowd pattern</h3><p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Average people inside by hour during {periodLabel.toLowerCase()}</p></div></div>
+        <div className="mt-5 overflow-x-auto pb-2"><div className="flex h-52 min-w-200 items-end gap-2" role="img" aria-label={`Average hourly crowd during ${periodLabel.toLowerCase()}`}>
           {data.hourly.map((item) => {
             const height = item.averageCrowd ? Math.max(8, (item.averageCrowd / hourlyMaximum) * 100) : 2
-            const isBest = weeklyBest?.hour === item.hour
+            const isBest = selectedBest?.hour === item.hour
             return <div key={item.hour} className="group flex h-full min-w-0 flex-1 flex-col justify-end"><div className="relative flex flex-1 items-end"><span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-slate-900 px-2 py-1 text-[10px] font-bold text-white group-hover:block">{item.label}: {item.averageCrowd} average</span><div className={`w-full rounded-t-sm bg-linear-to-t transition-all ${isBest ? 'from-emerald-700 to-lime-400 ring-2 ring-emerald-300 ring-offset-1 dark:ring-offset-slate-900' : 'from-violet-700 to-fuchsia-400 group-hover:from-violet-600 group-hover:to-fuchsia-300'}`} style={{ height: `${height}%` }} /></div><span className={`mt-2 truncate text-center text-[9px] font-medium ${isBest ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>{item.label}</span></div>
           })}
         </div></div>
@@ -184,6 +284,7 @@ function UserViewPalace() {
   const [error, setError] = useState('')
   const [scannerOpen, setScannerOpen] = useState(false)
   const [crowdData, setCrowdData] = useState(null)
+  const [crowdPeriod, setCrowdPeriod] = useState(7)
   const [crowdLoading, setCrowdLoading] = useState(true)
   const [crowdError, setCrowdError] = useState('')
   const [reviewData, setReviewData] = useState(null)
@@ -256,28 +357,39 @@ function UserViewPalace() {
     return () => controller.abort()
   }, [id])
 
+
   useEffect(() => {
     const controller = new AbortController()
 
-    Promise.resolve()
-      .then(() => {
-        setCrowdLoading(true)
-        setCrowdError('')
-        return axios.get(`${API_BASE_URL}checkin/crowd/${id}`, { signal: controller.signal })
-      })
-      .then((response) => setCrowdData(response?.data || null))
-      .catch((requestError) => {
-        if (requestError?.code !== 'ERR_CANCELED') {
-          setCrowdData(null)
-          setCrowdError(requestError?.response?.data?.message || 'Unable to load crowd information.')
-        }
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setCrowdLoading(false)
-      })
+    const refreshCrowd = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}checkin/crowd/${id}`, {
+          params: { days: crowdPeriod, timestamp: Date.now() },
+          signal: controller.signal,
+        })
 
-    return () => controller.abort()
-  }, [id])
+        setCrowdData(response?.data || null)
+        setCrowdError('')
+      } catch (requestError) {
+        if (requestError?.code !== 'ERR_CANCELED') {
+          setCrowdError(requestError?.response?.data?.message || 'Unable to update live crowd.')
+        }
+      } finally {
+        if (!controller.signal.aborted) setCrowdLoading(false)
+      }
+    }
+
+    Promise.resolve()
+      .then(() => setCrowdLoading(true))
+      .then(refreshCrowd)
+
+    const intervalId = setInterval(refreshCrowd, 30000)
+
+    return () => {
+      clearInterval(intervalId)
+      controller.abort()
+    }
+  }, [crowdPeriod, id, scannerOpen])
 
   if (loading) {
     return (
@@ -340,7 +452,8 @@ function UserViewPalace() {
           Back to all palaces
         </button>
 
-        <CrowdPreview data={crowdData} loading={crowdLoading} error={crowdError} />
+        <CrowdPeriodSelector value={crowdPeriod} onChange={setCrowdPeriod} loading={crowdLoading} />
+        <CrowdPreview data={crowdData} loading={crowdLoading} error={crowdError} periodDays={crowdPeriod} />
         <ReviewPreview data={reviewData} loading={reviewsLoading} error={reviewsError} />
 
         <article className="mt-4 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-900/5 dark:border-slate-800 dark:bg-slate-900">
@@ -484,7 +597,7 @@ function UserViewPalace() {
           </div>
         </article>
 
-        <CrowdInformation data={crowdData} loading={crowdLoading} error={crowdError} />
+        <CrowdInformation data={crowdData} loading={crowdLoading} error={crowdError} periodDays={crowdPeriod} />
       </div>
 
       {scannerOpen && canScanQr && <QrScannerModal onClose={() => setScannerOpen(false)} />}

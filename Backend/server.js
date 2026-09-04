@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 require('dotenv').config()
 const fileUpload = require("express-fileupload");
+const { startAutoCheckoutJob } = require('./Utils/AutoCheckoutJob')
 
 
 const app = express();
@@ -16,7 +17,10 @@ app.use(express.urlencoded({extended:true}))
 
 mongoose
   .connect(process.env.url)
-  .then(() => console.log("connected to mongodb"))
+  .then(() => {
+    console.log("connected to mongodb")
+    startAutoCheckoutJob()
+  })
   .catch((err) => console.log(err));
 
 const userroute = require("./Route/UserRoute");

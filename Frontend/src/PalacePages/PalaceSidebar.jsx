@@ -47,7 +47,7 @@ function PalaceSidebar({ activewindow, setactivewindow, isMobileOpen, onMobileCl
       <div className="flex h-16 shrink-0 items-center justify-between border-b border-gray-100 px-4 dark:border-gray-800">
         <div className="flex items-center gap-3 overflow-hidden">
           <div className="h-9 w-9 min-w-9 rounded-xl bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white font-bold text-lg">
-            A
+            P
           </div>
           {(!isCollapsed || isMobileOpen) && (
             <span className="font-bold text-gray-900 dark:text-white text-base truncate">

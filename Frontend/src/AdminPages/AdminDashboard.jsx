@@ -6,6 +6,7 @@ import {
   ArrowRight,
   Building2,
   CalendarDays,
+  ChevronDown,
   Clock3,
   DoorOpen,
   RefreshCw,
@@ -329,26 +330,31 @@ function AdminDashboard({ onNavigate }) {
             <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">Palace & crowd dashboard</h2>
             <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">Monitor your palaces and visitor activity for the selected period.</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="relative">
-              <span className="sr-only">Select dashboard date range</span>
-              <CalendarDays size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-blue-200" aria-hidden="true" />
-              <select
-                value={days}
-                onChange={(event) => {
-                  setDays(Number(event.target.value))
-                  setSelectedDayKey(null)
-                }}
-                className="appearance-none rounded-xl border border-white/20 bg-white/10 py-2.5 pl-9 pr-8 text-sm font-bold text-white outline-none backdrop-blur transition hover:bg-white/15 focus:ring-2 focus:ring-blue-400 [&>option]:text-slate-900"
-              >
-                {rangeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </select>
+          <div className="flex w-full items-end gap-2 lg:w-auto lg:shrink-0">
+            <label className="block min-w-0 flex-1 lg:w-52">
+              <span className="mb-2 block text-xs font-semibold tracking-wide text-blue-200">Time period</span>
+              <span className="relative block">
+                <CalendarDays size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-600 dark:text-blue-400" aria-hidden="true" />
+                <select
+                  aria-label="Select dashboard time period"
+                  value={days}
+                  onChange={(event) => {
+                    setDays(Number(event.target.value))
+                    setSelectedDayKey(null)
+                  }}
+                  className="h-12 w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white pl-11 pr-10 text-sm font-semibold text-slate-900 shadow-sm outline-none transition hover:border-blue-300 hover:bg-blue-50 focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-blue-950 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:scheme-dark dark:hover:border-blue-400 dark:hover:bg-slate-700 [&>option]:bg-white [&>option]:text-slate-900 dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
+                >
+                  {rangeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+                <ChevronDown size={17} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400" aria-hidden="true" />
+              </span>
             </label>
             <button
               type="button"
               onClick={() => loadDashboard(undefined, true)}
               disabled={refreshing}
-              className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-bold backdrop-blur transition hover:bg-white/20 disabled:cursor-wait disabled:opacity-70"
+              aria-label={refreshing ? 'Refreshing dashboard' : 'Refresh dashboard'}
+              className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 text-sm font-bold backdrop-blur transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:cursor-wait disabled:opacity-70"
             >
               <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} aria-hidden="true" />
               <span className="hidden sm:inline">{refreshing ? 'Refreshing...' : 'Refresh'}</span>

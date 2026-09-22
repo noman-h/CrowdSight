@@ -1,11 +1,12 @@
 import axios from 'axios'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import {
   Activity,
   AlertCircle,
   ArrowRight,
   Building2,
   CalendarDays,
+  Check,
   ChevronDown,
   Clock3,
   DoorOpen,
@@ -24,6 +25,95 @@ const rangeOptions = [
   { value: 30, label: 'Last 30 days' },
   { value: 90, label: 'Last 90 days' },
 ]
+
+function TimePeriodSelect({ value, onChange }) {
+  const [open, setOpen] = useState(false)
+  const listId = useId()
+  const selectedIndex = rangeOptions.findIndex((option) => option.value === value)
+
+  useEffect(() => {
+    if (!open) return
+    document.getElementById(`${listId}-option-${selectedIndex}`)?.focus()
+    const dismiss = (event) => {
+      if (!document.getElementById(`${listId}-container`)?.contains(event.target)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', dismiss)
+    return () => document.removeEventListener('pointerdown', dismiss)
+  }, [open, selectedIndex, listId])
+
+  return (
+    <div
+      id={`${listId}-container`}
+      className="relative min-w-0 flex-1 lg:w-52"
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false)
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          event.preventDefault()
+          setOpen(false)
+          document.getElementById(`${listId}-trigger`)?.focus()
+        }
+      }}
+    >
+      <span id={`${listId}-label`} className="mb-2 block text-xs font-semibold tracking-wide text-blue-200">Time period</span>
+      <button
+        id={`${listId}-trigger`}
+        type="button"
+        aria-labelledby={`${listId}-label ${listId}-value`}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={open ? listId : undefined}
+        onClick={() => setOpen(!open)}
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault()
+            setOpen(true)
+          }
+        }}
+        className={`flex h-12 w-full cursor-pointer items-center gap-3 rounded-xl border px-3.5 text-left text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-white/15 focus-visible:ring-2 focus-visible:ring-blue-400 ${open ? 'border-blue-400 bg-white/15 ring-2 ring-blue-400/30' : 'border-white/25 bg-white/10'}`}
+      >
+        <CalendarDays size={18} className="shrink-0 text-blue-200" aria-hidden="true" />
+        <span id={`${listId}-value`} className="min-w-0 flex-1 truncate">{rangeOptions[selectedIndex]?.label}</span>
+        <ChevronDown size={17} className={`shrink-0 text-blue-200 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+      </button>
+      {open && (
+        <div id={listId} role="listbox" aria-labelledby={`${listId}-label`} className="absolute left-0 right-0 z-50 mt-2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl shadow-slate-950/20 dark:border-slate-700 dark:bg-slate-900">
+          {rangeOptions.map((option, index) => (
+            <button
+              id={`${listId}-option-${index}`}
+              key={option.value}
+              type="button"
+              role="option"
+              aria-selected={value === option.value}
+              tabIndex={-1}
+              onKeyDown={(event) => {
+                let nextIndex
+                if (event.key === 'ArrowDown') nextIndex = (index + 1) % rangeOptions.length
+                if (event.key === 'ArrowUp') nextIndex = (index - 1 + rangeOptions.length) % rangeOptions.length
+                if (event.key === 'Home') nextIndex = 0
+                if (event.key === 'End') nextIndex = rangeOptions.length - 1
+                if (nextIndex !== undefined) {
+                  event.preventDefault()
+                  document.getElementById(`${listId}-option-${nextIndex}`)?.focus()
+                }
+              }}
+              onClick={() => {
+                onChange(option.value)
+                setOpen(false)
+                document.getElementById(`${listId}-trigger`)?.focus()
+              }}
+              className={`flex min-h-11 w-full cursor-pointer items-center justify-between gap-2 rounded-lg px-3 text-left text-sm outline-none transition focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-400 ${value === option.value ? 'bg-blue-50 font-semibold text-blue-700 dark:bg-blue-500/15 dark:text-blue-300' : 'text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800'}`}
+            >
+              {option.label}
+              {value === option.value && <Check size={16} className="shrink-0" aria-hidden="true" />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 function toDateInputValue(date) {
   const year = date.getFullYear()
@@ -322,8 +412,10 @@ function AdminDashboard({ onNavigate }) {
 
   return (
     <section className="space-y-5 pb-6">
-      <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-slate-900 via-blue-950 to-indigo-900 p-6 text-white shadow-xl sm:p-8">
-        <div className="absolute -right-16 -top-24 h-64 w-64 rounded-full bg-blue-400/20 blur-3xl" />
+      <div className="relative z-10 rounded-3xl bg-linear-to-br from-slate-900 via-blue-950 to-indigo-900 p-6 text-white shadow-xl sm:p-8">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl" aria-hidden="true">
+          <div className="absolute -right-16 -top-24 h-64 w-64 rounded-full bg-blue-400/20 blur-3xl" />
+        </div>
         <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-blue-300">Area overview</p>
@@ -331,24 +423,10 @@ function AdminDashboard({ onNavigate }) {
             <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">Monitor your palaces and visitor activity for the selected period.</p>
           </div>
           <div className="flex w-full items-end gap-2 lg:w-auto lg:shrink-0">
-            <label className="block min-w-0 flex-1 lg:w-52">
-              <span className="mb-2 block text-xs font-semibold tracking-wide text-blue-200">Time period</span>
-              <span className="relative block">
-                <CalendarDays size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-blue-600 dark:text-blue-400" aria-hidden="true" />
-                <select
-                  aria-label="Select dashboard time period"
-                  value={days}
-                  onChange={(event) => {
-                    setDays(Number(event.target.value))
-                    setSelectedDayKey(null)
-                  }}
-                  className="h-12 w-full cursor-pointer appearance-none rounded-xl border border-slate-200 bg-white pl-11 pr-10 text-sm font-semibold text-slate-900 shadow-sm outline-none transition hover:border-blue-300 hover:bg-blue-50 focus-visible:border-blue-400 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-blue-950 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:scheme-dark dark:hover:border-blue-400 dark:hover:bg-slate-700 [&>option]:bg-white [&>option]:text-slate-900 dark:[&>option]:bg-slate-800 dark:[&>option]:text-slate-100"
-                >
-                  {rangeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                </select>
-                <ChevronDown size={17} className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400" aria-hidden="true" />
-              </span>
-            </label>
+            <TimePeriodSelect value={days} onChange={(value) => {
+              setDays(value)
+              setSelectedDayKey(null)
+            }} />
             <button
               type="button"
               onClick={() => loadDashboard(undefined, true)}
